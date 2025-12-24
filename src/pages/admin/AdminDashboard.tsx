@@ -1,7 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { AppLayout } from '@/components/AppLayout';
 import { StatsCard } from '@/components/StatsCard';
-import { Button } from '@/components/ui/button';
 import { getStats } from '@/data/mockData';
 import { 
   Users, 
@@ -14,6 +13,7 @@ import {
   UserCheck,
   CreditCard,
   BarChart3,
+  AlertTriangle,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -28,20 +28,26 @@ const AdminDashboard = () => {
     {
       label: 'Gerenciar Usuários',
       icon: Users,
-      path: '/usuarios',
+      path: '/admin/usuarios',
       description: 'Ver, editar e gerenciar usuários',
     },
     {
-      label: 'Monitorar Entregas',
+      label: 'Monitorar Pedidos',
       icon: Package,
-      path: '/entregas',
-      description: 'Acompanhar todas as entregas',
+      path: '/admin/pedidos',
+      description: 'Acompanhar todos os pedidos',
     },
     {
       label: 'Gerenciar Créditos',
       icon: CreditCard,
-      path: '/gerenciar-creditos',
+      path: '/admin/creditos',
       description: 'Adicionar créditos aos usuários',
+    },
+    {
+      label: 'Alertas',
+      icon: AlertTriangle,
+      path: '/admin/alertas',
+      description: 'Criar alertas para usuários',
     },
   ];
 
@@ -51,7 +57,7 @@ const AdminDashboard = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Dashboard Admin</h1>
+            <h1 className="text-2xl font-semibold text-foreground">Dashboard Admin</h1>
             <p className="text-muted-foreground">Visão geral do sistema FLUX</p>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -78,7 +84,7 @@ const AdminDashboard = () => {
             />
             <StatsCard
               title="Entregadores"
-              value={stats.totalDeliverers}
+              value={stats.totalDrivers}
               icon={Truck}
               delay={100}
             />
@@ -92,33 +98,33 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Delivery Stats */}
+        {/* Order Stats */}
         <div>
-          <h2 className="text-lg font-semibold text-foreground mb-4">Entregas</h2>
+          <h2 className="text-lg font-semibold text-foreground mb-4">Pedidos</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatsCard
-              title="Total de Entregas"
-              value={stats.totalDeliveries}
+              title="Total de Pedidos"
+              value={stats.totalOrders}
               icon={Package}
               delay={200}
             />
             <StatsCard
-              title="Abertas"
-              value={stats.openDeliveries}
+              title="Aguardando"
+              value={stats.pendingOrders}
               icon={Clock}
               iconClassName="bg-amber-100"
               delay={250}
             />
             <StatsCard
-              title="Concluídas"
-              value={stats.completedDeliveries}
+              title="Concluídos"
+              value={stats.completedOrders}
               icon={CheckCircle2}
               iconClassName="bg-emerald-100"
               delay={300}
             />
             <StatsCard
-              title="Canceladas"
-              value={stats.cancelledDeliveries}
+              title="Cancelados"
+              value={stats.cancelledOrders}
               icon={XCircle}
               iconClassName="bg-red-100"
               delay={350}
@@ -129,7 +135,7 @@ const AdminDashboard = () => {
         {/* Quick Actions */}
         <div>
           <h2 className="text-lg font-semibold text-foreground mb-4">Ações Rápidas</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {quickActions.map((action, index) => (
               <button
                 key={action.path}

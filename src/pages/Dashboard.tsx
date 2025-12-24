@@ -5,21 +5,18 @@ import EmpresaDashboard from './empresa/EmpresaDashboard';
 import EntregadorDashboard from './entregador/EntregadorDashboard';
 
 const Dashboard = () => {
-  const { user, isAuthenticated, hasCredits } = useAuth();
+  const { user, isAuthenticated } = useAuth();
 
   if (!isAuthenticated || !user) {
     return <Navigate to="/" replace />;
   }
 
-  // If no credits and trying to access dashboard, still show it but with limitations
-  // The AppLayout will handle navigation restrictions
-
   switch (user.role) {
     case 'admin':
       return <AdminDashboard />;
-    case 'empresa':
+    case 'company':
       return <EmpresaDashboard />;
-    case 'entregador':
+    case 'driver':
       return <EntregadorDashboard />;
     default:
       return <Navigate to="/" replace />;
