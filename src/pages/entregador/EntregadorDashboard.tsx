@@ -3,6 +3,7 @@ import { AppLayout } from '@/components/AppLayout';
 import { StatsCard } from '@/components/StatsCard';
 import { Button } from '@/components/ui/button';
 import { getDelivererDeliveries, getAvailableDeliveries } from '@/data/mockData';
+import { ExpiredCreditBanner, PromoBanner } from '@/components/banners';
 import { 
   Package, 
   Clock, 
@@ -34,6 +35,12 @@ const EntregadorDashboard = () => {
   return (
     <AppLayout>
       <div className="space-y-6">
+        {/* Expired credit banner */}
+        <ExpiredCreditBanner />
+
+        {/* Promo banner (only show when has credits) */}
+        {hasCredits && <PromoBanner variant="compact" />}
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -41,24 +48,6 @@ const EntregadorDashboard = () => {
             <p className="text-muted-foreground">Olá, {user.name}!</p>
           </div>
         </div>
-
-        {/* Credits warning */}
-        {!hasCredits && (
-          <div className="card-static p-4 border-destructive/50 bg-destructive/5">
-            <div className="flex items-center gap-3">
-              <CreditCard className="h-5 w-5 text-destructive" />
-              <div className="flex-1">
-                <p className="font-medium text-destructive">Seus créditos expiraram</p>
-                <p className="text-sm text-muted-foreground">
-                  Adicione créditos para continuar realizando entregas
-                </p>
-              </div>
-              <Button variant="destructive" size="sm" onClick={() => navigate('/creditos')}>
-                Adicionar Créditos
-              </Button>
-            </div>
-          </div>
-        )}
 
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

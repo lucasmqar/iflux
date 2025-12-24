@@ -2,14 +2,19 @@ import { useAuth } from '@/contexts/AuthContext';
 import { AppLayout } from '@/components/AppLayout';
 import { CreditsBadge } from '@/components/CreditsBadge';
 import { Button } from '@/components/ui/button';
-import { WHATSAPP_SUPPORT } from '@/types';
 import { mockCreditHistory } from '@/data/mockData';
+import { ExpiredCreditBanner, PromoBanner } from '@/components/banners';
+import { getAddCreditsWhatsAppUrl, openWhatsApp } from '@/lib/whatsapp';
 import { MessageCircle, CreditCard, Clock, Plus, Info } from 'lucide-react';
 
 const Creditos = () => {
-  const { user } = useAuth();
+  const { user, hasCredits } = useAuth();
 
   if (!user) return null;
+
+  const handleAddCredits = () => {
+    openWhatsApp(getAddCreditsWhatsAppUrl(user));
+  };
 
   // Filter credit history for current user
   const userHistory = mockCreditHistory.filter(h => h.userId === user.id);
@@ -27,6 +32,10 @@ const Creditos = () => {
   return (
     <AppLayout>
       <div className="max-w-2xl mx-auto space-y-6">
+        {/* Banners */}
+        <ExpiredCreditBanner />
+        {hasCredits && <PromoBanner />}
+
         <h1 className="text-2xl font-bold text-foreground">Créditos</h1>
 
         {/* Current status */}
@@ -80,7 +89,7 @@ const Creditos = () => {
               variant="whatsapp"
               size="xl"
               className="w-full sm:w-auto"
-              onClick={() => window.open(WHATSAPP_SUPPORT, '_blank')}
+              onClick={handleAddCredits}
             >
               <MessageCircle className="h-5 w-5" />
               Comprar Créditos via WhatsApp
