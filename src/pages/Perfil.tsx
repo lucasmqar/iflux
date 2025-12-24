@@ -14,13 +14,13 @@ const roleConfig = {
     description: 'Acesso completo ao sistema',
     color: 'bg-purple-100 text-purple-800',
   },
-  empresa: {
+  company: {
     label: 'Empresa',
     icon: Building2,
     description: 'Solicite e gerencie suas entregas',
     color: 'bg-blue-100 text-blue-800',
   },
-  entregador: {
+  driver: {
     label: 'Entregador',
     icon: Truck,
     description: 'Realize entregas e acompanhe seus ganhos',

@@ -1,4 +1,4 @@
-import { DeliveryStatus } from '@/types';
+import { OrderStatus, ORDER_STATUS_LABELS } from '@/types';
 import { 
   Package, 
   Clock, 
@@ -10,38 +10,38 @@ import {
 import { cn } from '@/lib/utils';
 
 interface StatusBadgeProps {
-  status: DeliveryStatus;
+  status: OrderStatus;
   size?: 'sm' | 'md' | 'lg';
   showIcon?: boolean;
 }
 
-const statusConfig: Record<DeliveryStatus, { 
+const statusConfig: Record<OrderStatus, { 
   label: string; 
   icon: LucideIcon; 
   className: string;
 }> = {
-  ABERTA: {
-    label: 'Aberta',
+  pending: {
+    label: 'Aguardando',
     icon: Clock,
     className: 'bg-amber-100 text-amber-800 border-amber-200',
   },
-  ACEITA: {
-    label: 'Aceita',
+  accepted: {
+    label: 'Aceito',
     icon: Package,
     className: 'bg-blue-100 text-blue-800 border-blue-200',
   },
-  COLETADA: {
-    label: 'Coletada',
+  driver_completed: {
+    label: 'Entregue',
     icon: Truck,
     className: 'bg-purple-100 text-purple-800 border-purple-200',
   },
-  CONCLUIDA: {
-    label: 'Concluída',
+  completed: {
+    label: 'Concluído',
     icon: CheckCircle2,
     className: 'bg-emerald-100 text-emerald-800 border-emerald-200',
   },
-  CANCELADA: {
-    label: 'Cancelada',
+  cancelled: {
+    label: 'Cancelado',
     icon: XCircle,
     className: 'bg-red-100 text-red-800 border-red-200',
   },

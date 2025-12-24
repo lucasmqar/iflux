@@ -1,5 +1,5 @@
-import { User, WHATSAPP_SUPPORT } from '@/types';
-import { hasValidCredits } from '@/data/mockData';
+import { User } from '@/types';
+import { hasValidCredits, getUserCredits } from '@/data/mockData';
 import { cn } from '@/lib/utils';
 
 interface CreditsBadgeProps {
@@ -14,7 +14,8 @@ export const CreditsBadge: React.FC<CreditsBadgeProps> = ({
   showExpiry = true,
 }) => {
   const isActive = hasValidCredits(user);
-  const validUntil = new Date(user.validUntil);
+  const credits = getUserCredits(user.id);
+  const validUntil = credits ? new Date(credits.validUntil) : new Date();
   
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('pt-BR', {
@@ -23,8 +24,18 @@ export const CreditsBadge: React.FC<CreditsBadgeProps> = ({
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
+      timeZone: 'America/Sao_Paulo',
     });
   };
+
+  const getDaysRemaining = (): number => {
+    if (!credits) return 0;
+    const now = new Date();
+    const diff = new Date(credits.validUntil).getTime() - now.getTime();
+    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+  };
+
+  const daysRemaining = getDaysRemaining();
 
   const sizeClasses = {
     sm: 'text-xs px-2 py-0.5',
@@ -52,9 +63,11 @@ export const CreditsBadge: React.FC<CreditsBadgeProps> = ({
           />
           {isActive ? 'ATIVO' : 'EXPIRADO'}
         </span>
-        <span className="text-sm text-muted-foreground">
-          {user.credits} crédito{user.credits !== 1 ? 's' : ''}
-        </span>
+        {isActive && (
+          <span className="text-sm text-muted-foreground">
+            {daysRemaining} dia{daysRemaining !== 1 ? 's' : ''} restante{daysRemaining !== 1 ? 's' : ''}
+          </span>
+        )}
       </div>
       
       {showExpiry && (
