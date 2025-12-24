@@ -2,9 +2,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { AppLayout } from '@/components/AppLayout';
 import { CreditsBadge } from '@/components/CreditsBadge';
 import { Button } from '@/components/ui/button';
-import { WHATSAPP_SUPPORT } from '@/types';
-import { User, Building2, Truck, MessageCircle, LogOut } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { ExpiredCreditBanner } from '@/components/banners';
+import { getAddCreditsWhatsAppUrl, getSupportWhatsAppUrl, openWhatsApp } from '@/lib/whatsapp';
+import { User, Building2, Truck, MessageCircle, LogOut, HelpCircle } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const roleConfig = {
   admin: {
@@ -30,6 +31,7 @@ const roleConfig = {
 const Perfil = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   if (!user) return null;
 
@@ -41,9 +43,20 @@ const Perfil = () => {
     navigate('/');
   };
 
+  const handleAddCredits = () => {
+    openWhatsApp(getAddCreditsWhatsAppUrl(user));
+  };
+
+  const handleSupport = () => {
+    openWhatsApp(getSupportWhatsAppUrl(user, location.pathname));
+  };
+
   return (
     <AppLayout>
       <div className="max-w-2xl mx-auto space-y-6">
+        {/* Expired credit banner */}
+        <ExpiredCreditBanner />
+
         <h1 className="text-2xl font-bold text-foreground">Meu Perfil</h1>
 
         {/* User card */}
@@ -71,15 +84,24 @@ const Perfil = () => {
           <h3 className="text-lg font-semibold text-foreground mb-4">Status de Créditos</h3>
           <CreditsBadge user={user} size="lg" />
 
-          <div className="mt-6">
+          <div className="mt-6 space-y-3">
             <Button
               variant="whatsapp"
               size="lg"
               className="w-full"
-              onClick={() => window.open(WHATSAPP_SUPPORT, '_blank')}
+              onClick={handleAddCredits}
             >
               <MessageCircle className="h-5 w-5" />
               Adicionar Créditos via WhatsApp
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              className="w-full"
+              onClick={handleSupport}
+            >
+              <HelpCircle className="h-5 w-5" />
+              Falar com Suporte
             </Button>
           </div>
         </div>

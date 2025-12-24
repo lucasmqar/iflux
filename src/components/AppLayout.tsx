@@ -3,6 +3,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import fluxLogo from '@/assets/flux-logo.png';
+import { MarketingBanner } from '@/components/banners';
+import { getSupportWhatsAppUrl, openWhatsApp } from '@/lib/whatsapp';
 import {
   LayoutDashboard,
   Package,
@@ -19,7 +21,6 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
-import { WHATSAPP_SUPPORT } from '@/types';
 import { hasValidCredits } from '@/data/mockData';
 
 interface AppLayoutProps {
@@ -103,15 +104,23 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     navigate('/');
   };
 
+  const handleSupportClick = () => {
+    openWhatsApp(getSupportWhatsAppUrl(user, location.pathname));
+  };
+
   return (
-    <div className="min-h-screen bg-background flex">
-      {/* Mobile overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-40 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Marketing banner - top fixed */}
+      <MarketingBanner collapsible />
+
+      <div className="flex flex-1">
+        {/* Mobile overlay */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-40 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
 
       {/* Sidebar */}
       <aside
@@ -213,15 +222,13 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           })}
 
           {/* WhatsApp support */}
-          <a
-            href={WHATSAPP_SUPPORT}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            onClick={handleSupportClick}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
           >
             <MessageCircle className="h-5 w-5" />
             Suporte
-          </a>
+          </button>
 
           {/* Logout */}
           <button
@@ -259,6 +266,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           {children}
         </div>
       </main>
+      </div>
     </div>
   );
 };

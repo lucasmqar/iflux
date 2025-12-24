@@ -5,6 +5,8 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { getCompanyDeliveries, getDelivererDeliveries } from '@/data/mockData';
 import { Delivery, DeliveryStatus } from '@/types';
+import { DeliveryInProgressBanner } from '@/components/banners';
+import { getDeliveryProblemWhatsAppUrl, getOrderHelpWhatsAppUrl, openWhatsApp } from '@/lib/whatsapp';
 import { toast } from 'sonner';
 import { 
   MapPin, 
@@ -14,6 +16,8 @@ import {
   XCircle,
   Package,
   ArrowRight,
+  HelpCircle,
+  MessageCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -40,6 +44,17 @@ const MinhasEntregas = () => {
   const filteredDeliveries = statusFilter === 'all' 
     ? deliveries 
     : deliveries.filter(d => d.status === statusFilter);
+
+  // Check if there's any delivery in COLETADA status
+  const hasDeliveryInProgress = deliveries.some(d => d.status === 'COLETADA');
+
+  const handleHelp = (delivery: Delivery) => {
+    if (user.role === 'empresa') {
+      openWhatsApp(getOrderHelpWhatsAppUrl(delivery.code));
+    } else {
+      openWhatsApp(getDeliveryProblemWhatsAppUrl(delivery.code));
+    }
+  };
 
   const formatDate = (date: Date) => {
     return new Date(date).toLocaleDateString('pt-BR', {
@@ -82,6 +97,11 @@ const MinhasEntregas = () => {
   return (
     <AppLayout>
       <div className="space-y-6">
+        {/* Contextual banner for delivery in progress */}
+        {user.role === 'entregador' && hasDeliveryInProgress && (
+          <DeliveryInProgressBanner />
+        )}
+
         {/* Header */}
         <div>
           <h1 className="text-2xl font-bold text-foreground">Minhas Entregas</h1>
@@ -171,10 +191,18 @@ const MinhasEntregas = () => {
               )}
 
               {/* Actions */}
-              <div className="flex items-center gap-2 pt-4 border-t border-border">
+              <div className="flex items-center gap-2 pt-4 border-t border-border flex-wrap">
                 <Button variant="outline" size="sm">
                   <Eye className="h-4 w-4 mr-2" />
                   Ver Detalhes
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleHelp(delivery)}
+                >
+                  <HelpCircle className="h-4 w-4 mr-2" />
+                  {user.role === 'empresa' ? 'Ajuda' : 'Problema na entrega?'}
                 </Button>
                 {canCancel(delivery) && (
                   <Button
