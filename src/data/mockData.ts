@@ -25,7 +25,7 @@ export const mockUsers: User[] = [
   {
     id: '2',
     name: 'Farmácia Central',
-    email: 'farmacia@central.com',
+    email: 'empresa@flux.com',
     phone: '64999999999',
     role: 'company',
     createdAt: new Date('2024-06-15'),
