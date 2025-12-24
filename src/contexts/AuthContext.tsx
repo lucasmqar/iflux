@@ -1,9 +1,10 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { User, UserRole } from '@/types';
-import { mockUsers, hasValidCredits } from '@/data/mockData';
+import { User, Credits } from '@/types';
+import { mockUsers, hasValidCredits, getUserCredits, getCompanyProfile, getDriverProfile } from '@/data/mockData';
 
 interface AuthContextType {
   user: User | null;
+  credits: Credits | null;
   isAuthenticated: boolean;
   hasCredits: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
@@ -15,6 +16,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [credits, setCredits] = useState<Credits | null>(null);
 
   const login = useCallback(async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     // Simulate API call delay
@@ -31,26 +33,31 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return { success: false, error: 'Usuário bloqueado. Entre em contato com o suporte.' };
     }
 
+    const userCredits = getUserCredits(foundUser.id);
+    
     setUser(foundUser);
+    setCredits(userCredits || null);
     return { success: true };
   }, []);
 
   const logout = useCallback(() => {
     setUser(null);
+    setCredits(null);
   }, []);
 
   const updateUser = useCallback((updates: Partial<User>) => {
     setUser(prev => prev ? { ...prev, ...updates } : null);
   }, []);
 
-  const hasCredits = user ? hasValidCredits(user) : false;
+  const hasCreditsActive = user ? hasValidCredits(user) : false;
 
   return (
     <AuthContext.Provider
       value={{
         user,
+        credits,
         isAuthenticated: !!user,
-        hasCredits,
+        hasCredits: hasCreditsActive,
         login,
         logout,
         updateUser,

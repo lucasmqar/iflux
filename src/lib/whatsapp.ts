@@ -1,12 +1,11 @@
-import { User, UserRole } from '@/types';
+import { User, UserRole, WHATSAPP_NUMBER } from '@/types';
 
-export const WHATSAPP_NUMBER = '5564981068393';
 export const WHATSAPP_BASE_URL = `https://wa.me/${WHATSAPP_NUMBER}`;
 
 const roleLabels: Record<UserRole, string> = {
   admin: 'Administrador',
-  empresa: 'Empresa',
-  entregador: 'Entregador',
+  company: 'Empresa',
+  driver: 'Entregador',
 };
 
 /**
@@ -30,11 +29,31 @@ export const getSupportWhatsAppUrl = (user: User, currentScreen: string): string
 };
 
 /**
+ * Generate WhatsApp link for contacting driver (from company)
+ */
+export const getDriverWhatsAppUrl = (driverPhone: string, orderCode: string): string => {
+  const message = encodeURIComponent(
+    `Olá, sou da empresa e gostaria de falar sobre o pedido ${orderCode}.`
+  );
+  return `https://wa.me/55${driverPhone.replace(/\D/g, '')}?text=${message}`;
+};
+
+/**
+ * Generate WhatsApp link for contacting company (from driver)
+ */
+export const getCompanyWhatsAppUrl = (companyPhone: string, orderCode: string): string => {
+  const message = encodeURIComponent(
+    `Olá, sou o entregador do pedido ${orderCode}.`
+  );
+  return `https://wa.me/55${companyPhone.replace(/\D/g, '')}?text=${message}`;
+};
+
+/**
  * Generate WhatsApp link for delivery problems (entregador)
  */
-export const getDeliveryProblemWhatsAppUrl = (deliveryCode: string): string => {
+export const getDeliveryProblemWhatsAppUrl = (orderCode: string): string => {
   const message = encodeURIComponent(
-    `Olá, estou com um problema na entrega ${deliveryCode}.`
+    `Olá, estou com um problema no pedido ${orderCode}.`
   );
   return `${WHATSAPP_BASE_URL}?text=${message}`;
 };
