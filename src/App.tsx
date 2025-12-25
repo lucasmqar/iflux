@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 
 // Pages
 import Login from "./pages/Login";
+import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Perfil from "./pages/Perfil";
 import Creditos from "./pages/Creditos";
@@ -40,6 +41,7 @@ const App = () => (
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<Login />} />
+            <Route path="/auth" element={<Auth />} />
 
             {/* Protected routes */}
             <Route path="/dashboard" element={<Dashboard />} />

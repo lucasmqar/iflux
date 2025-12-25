@@ -1,20 +1,17 @@
-import { User } from '@/types';
-import { hasValidCredits, getUserCredits } from '@/data/mockData';
+import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 
 interface CreditsBadgeProps {
-  user: User;
   size?: 'sm' | 'md' | 'lg';
   showExpiry?: boolean;
 }
 
 export const CreditsBadge: React.FC<CreditsBadgeProps> = ({
-  user,
   size = 'md',
   showExpiry = true,
 }) => {
-  const isActive = hasValidCredits(user);
-  const credits = getUserCredits(user.id);
+  const { credits, hasCredits } = useAuth();
+  const isActive = hasCredits;
   const validUntil = credits ? new Date(credits.validUntil) : new Date();
   
   const formatDate = (date: Date) => {
@@ -70,7 +67,7 @@ export const CreditsBadge: React.FC<CreditsBadgeProps> = ({
         )}
       </div>
       
-      {showExpiry && (
+      {showExpiry && credits && (
         <p className="text-xs text-muted-foreground">
           {isActive ? 'Válido até: ' : 'Expirou em: '}
           <span className="font-medium">{formatDate(validUntil)}</span>

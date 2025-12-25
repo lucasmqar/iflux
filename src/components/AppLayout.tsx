@@ -28,7 +28,7 @@ interface AppLayoutProps {
 }
 
 export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
-  const { user, logout, hasCredits } = useAuth();
+  const { user, signOut, hasCredits } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -105,8 +105,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     setSidebarOpen(false);
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await signOut();
     navigate('/');
   };
 
