@@ -1,11 +1,15 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { AppLayout } from '@/components/AppLayout';
-import { StatsCard } from '@/components/StatsCard';
+import { ClickableStatsCard } from '@/components/ClickableStatsCard';
 import { Button } from '@/components/ui/button';
-import { getOrdersByCompany, getUserById, getDriverProfile } from '@/data/mockData';
+import { useOrders, useUpdateOrderStatus } from '@/hooks/useOrders';
+import { useProfile } from '@/hooks/useProfile';
+import { useDriverProfile } from '@/hooks/useDriverProfiles';
 import { ExpiredCreditBanner, PromoBanner } from '@/components/banners';
 import { StatusBadge } from '@/components/StatusBadge';
-import { getDriverWhatsAppUrl, openWhatsApp, getAddCreditsWhatsAppUrl } from '@/lib/whatsapp';
+import { openWhatsApp, getAddCreditsWhatsAppUrl } from '@/lib/whatsapp';
+import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
+import { toast } from 'sonner';
 import { 
   Package, 
   Clock, 
@@ -18,6 +22,7 @@ import {
   Eye,
   User,
   ChevronRight,
+  Loader2,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatBrasiliaDateShort } from '@/types';
@@ -26,10 +31,15 @@ const EmpresaDashboard = () => {
   const { user, hasCredits } = useAuth();
   const navigate = useNavigate();
 
+  // Enable realtime notifications
+  useRealtimeNotifications(user?.id, user?.role ?? undefined);
+
+  // Use real data from Supabase
+  const { data: orders = [], isLoading } = useOrders(user?.id);
+  const updateStatusMutation = useUpdateOrderStatus();
+
   if (!user || user.role !== 'company') return null;
 
-  const orders = getOrdersByCompany(user.id);
-  
   const pendingOrders = orders.filter(o => o.status === 'pending');
   const acceptedOrders = orders.filter(o => o.status === 'accepted');
   const driverCompletedOrders = orders.filter(o => o.status === 'driver_completed');
@@ -43,12 +53,46 @@ const EmpresaDashboard = () => {
     cancelled: cancelledOrders.length,
   };
 
-  const handleWhatsAppDriver = (driverUserId: string, orderId: string) => {
-    const driver = getUserById(driverUserId);
-    if (driver) {
-      openWhatsApp(getDriverWhatsAppUrl(driver.phone, `#${orderId}`));
+  const handleCancelOrder = async (orderId: string) => {
+    try {
+      await updateStatusMutation.mutateAsync({
+        orderId,
+        status: 'cancelled',
+      });
+      toast.success('Pedido cancelado');
+    } catch (error) {
+      toast.error('Erro ao cancelar pedido');
     }
   };
+
+  const handleConfirmDelivery = async (orderId: string) => {
+    try {
+      await updateStatusMutation.mutateAsync({
+        orderId,
+        status: 'completed',
+      });
+      toast.success('Entrega confirmada!');
+    } catch (error) {
+      toast.error('Erro ao confirmar entrega');
+    }
+  };
+
+  const handleWhatsAppDriver = (driverPhone: string, orderId: string) => {
+    if (driverPhone) {
+      const url = `https://wa.me/55${driverPhone.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá! Sou da empresa do pedido #${orderId.slice(0, 8)}`)}`;
+      window.open(url, '_blank');
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
@@ -75,35 +119,39 @@ const EmpresaDashboard = () => {
           </Button>
         </div>
 
-        {/* Stats */}
+        {/* Stats - Clickable */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatsCard
+          <ClickableStatsCard
             title="Aguardando"
             value={stats.pending}
             icon={Clock}
             iconClassName="bg-amber-100"
             delay={0}
+            href="/meus-pedidos?status=pending"
           />
-          <StatsCard
+          <ClickableStatsCard
             title="Em Andamento"
             value={stats.accepted}
             icon={Truck}
             iconClassName="bg-blue-100"
             delay={50}
+            href="/meus-pedidos?status=accepted"
           />
-          <StatsCard
+          <ClickableStatsCard
             title="Concluídos"
             value={stats.completed}
             icon={CheckCircle2}
             iconClassName="bg-emerald-100"
             delay={100}
+            href="/meus-pedidos?status=completed"
           />
-          <StatsCard
+          <ClickableStatsCard
             title="Cancelados"
             value={stats.cancelled}
             icon={XCircle}
             iconClassName="bg-red-100"
             delay={150}
+            href="/meus-pedidos?status=cancelled"
           />
         </div>
 
@@ -119,23 +167,29 @@ const EmpresaDashboard = () => {
                 <div key={order.id} className="card-static p-4">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <span className="font-mono font-semibold">Pedido #{order.id}</span>
+                      <span className="font-mono font-semibold">Pedido #{order.id.slice(0, 8)}</span>
                       <StatusBadge status={order.status} size="sm" />
                     </div>
                     <span className="text-sm text-muted-foreground">
-                      {formatBrasiliaDateShort(order.createdAt)}
+                      {formatBrasiliaDateShort(new Date(order.created_at))}
                     </span>
                   </div>
                   <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
-                    <span>{order.deliveries.length} entrega{order.deliveries.length > 1 ? 's' : ''}</span>
-                    <span className="font-medium text-foreground">R$ {order.totalValue.toFixed(2)}</span>
+                    <span>{order.order_deliveries?.length || 0} entrega{(order.order_deliveries?.length || 0) > 1 ? 's' : ''}</span>
+                    <span className="font-medium text-foreground">R$ {order.total_value.toFixed(2)}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" onClick={() => navigate(`/pedido/${order.id}`)}>
                       <Eye className="h-4 w-4" />
                       Detalhes
                     </Button>
-                    <Button variant="ghost" size="sm" className="text-destructive">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="text-destructive"
+                      onClick={() => handleCancelOrder(order.id)}
+                      disabled={updateStatusMutation.isPending}
+                    >
                       <XCircle className="h-4 w-4" />
                       Cancelar
                     </Button>
@@ -154,57 +208,14 @@ const EmpresaDashboard = () => {
               Em Andamento ({acceptedOrders.length})
             </h2>
             <div className="space-y-3">
-              {acceptedOrders.map((order) => {
-                const driver = order.driverUserId ? getUserById(order.driverUserId) : null;
-                const driverProfile = order.driverUserId ? getDriverProfile(order.driverUserId) : null;
-                
-                return (
-                  <div key={order.id} className="card-static p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <span className="font-mono font-semibold">Pedido #{order.id}</span>
-                        <StatusBadge status={order.status} size="sm" />
-                      </div>
-                      <span className="text-sm text-muted-foreground">
-                        {formatBrasiliaDateShort(order.createdAt)}
-                      </span>
-                    </div>
-                    
-                    {driver && (
-                      <div className="flex items-center gap-3 mb-3 p-3 rounded-lg bg-secondary/50">
-                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                          <User className="h-5 w-5 text-blue-600" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium text-foreground">{driver.name}</p>
-                          {driverProfile && (
-                            <p className="text-xs text-muted-foreground">
-                              {driverProfile.vehicleType === 'moto' ? '🏍️' : driverProfile.vehicleType === 'car' ? '🚗' : '🚲'} {driverProfile.vehicleModel} • {driverProfile.plate}
-                            </p>
-                          )}
-                        </div>
-                        <Button
-                          size="sm"
-                          className="bg-[#25D366] hover:bg-[#20BD5A] text-white"
-                          onClick={() => handleWhatsAppDriver(order.driverUserId!, order.id)}
-                        >
-                          <MessageCircle className="h-4 w-4" />
-                          WhatsApp
-                        </Button>
-                      </div>
-                    )}
-
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
-                      <span>{order.deliveries.length} entrega{order.deliveries.length > 1 ? 's' : ''}</span>
-                      <span className="font-medium text-foreground">R$ {order.totalValue.toFixed(2)}</span>
-                    </div>
-                    <Button variant="outline" size="sm" onClick={() => navigate(`/pedido/${order.id}`)}>
-                      <Eye className="h-4 w-4" />
-                      Ver Detalhes
-                    </Button>
-                  </div>
-                );
-              })}
+              {acceptedOrders.map((order) => (
+                <InProgressOrderCard
+                  key={order.id}
+                  order={order}
+                  onViewDetails={() => navigate(`/pedido/${order.id}`)}
+                  onWhatsApp={(phone) => handleWhatsAppDriver(phone, order.id)}
+                />
+              ))}
             </div>
           </section>
         )}
@@ -217,34 +228,15 @@ const EmpresaDashboard = () => {
               Aguardando Confirmação ({driverCompletedOrders.length})
             </h2>
             <div className="space-y-3">
-              {driverCompletedOrders.map((order) => {
-                const driver = order.driverUserId ? getUserById(order.driverUserId) : null;
-                
-                return (
-                  <div key={order.id} className="card-static p-4 border-2 border-purple-200 bg-purple-50/50">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <span className="font-mono font-semibold">Pedido #{order.id}</span>
-                        <StatusBadge status={order.status} size="sm" />
-                      </div>
-                    </div>
-                    
-                    <p className="text-sm text-purple-700 mb-3">
-                      Entregador <strong>{driver?.name}</strong> finalizou. Confirme o recebimento.
-                    </p>
-
-                    <div className="flex items-center gap-2">
-                      <Button size="sm" onClick={() => navigate(`/pedido/${order.id}`)}>
-                        <CheckCircle2 className="h-4 w-4" />
-                        Confirmar Recebimento
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => navigate(`/pedido/${order.id}`)}>
-                        Ver Detalhes
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
+              {driverCompletedOrders.map((order) => (
+                <AwaitingConfirmationCard
+                  key={order.id}
+                  order={order}
+                  onConfirm={() => handleConfirmDelivery(order.id)}
+                  onViewDetails={() => navigate(`/pedido/${order.id}`)}
+                  isPending={updateStatusMutation.isPending}
+                />
+              ))}
             </div>
           </section>
         )}
@@ -269,11 +261,11 @@ const EmpresaDashboard = () => {
                 <div key={order.id} className="card-static p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <span className="font-mono font-semibold">Pedido #{order.id}</span>
+                      <span className="font-mono font-semibold">Pedido #{order.id.slice(0, 8)}</span>
                       <StatusBadge status={order.status} size="sm" />
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="font-medium text-foreground">R$ {order.totalValue.toFixed(2)}</span>
+                      <span className="font-medium text-foreground">R$ {order.total_value.toFixed(2)}</span>
                       <Button variant="ghost" size="icon-sm" onClick={() => navigate(`/pedido/${order.id}`)}>
                         <ChevronRight className="h-4 w-4" />
                       </Button>
@@ -315,6 +307,119 @@ const EmpresaDashboard = () => {
         </section>
       </div>
     </AppLayout>
+  );
+};
+
+// In Progress Order Card for Company
+const InProgressOrderCard = ({ 
+  order, 
+  onViewDetails,
+  onWhatsApp 
+}: { 
+  order: any; 
+  onViewDetails: () => void;
+  onWhatsApp: (phone: string) => void;
+}) => {
+  const { data: driverProfile } = useDriverProfile(order.driver_user_id);
+  const { data: profile } = useProfile(order.driver_user_id);
+
+  const vehicleIcons: Record<string, string> = {
+    moto: '🏍️',
+    car: '🚗',
+    bike: '🚲',
+  };
+
+  return (
+    <div className="card-static p-4">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-3">
+          <span className="font-mono font-semibold">Pedido #{order.id.slice(0, 8)}</span>
+          <StatusBadge status={order.status} size="sm" />
+        </div>
+        <span className="text-sm text-muted-foreground">
+          {formatBrasiliaDateShort(new Date(order.created_at))}
+        </span>
+      </div>
+      
+      {profile && (
+        <div className="flex items-center gap-3 mb-3 p-3 rounded-lg bg-secondary/50">
+          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+            <User className="h-5 w-5 text-blue-600" />
+          </div>
+          <div className="flex-1">
+            <p className="font-medium text-foreground">{profile.name}</p>
+            {driverProfile && (
+              <p className="text-xs text-muted-foreground">
+                {vehicleIcons[driverProfile.vehicle_type] || '🚗'} {driverProfile.vehicle_model} • {driverProfile.plate}
+              </p>
+            )}
+          </div>
+          {profile.phone && (
+            <Button
+              size="sm"
+              className="bg-[#25D366] hover:bg-[#20BD5A] text-white"
+              onClick={() => onWhatsApp(profile.phone!)}
+            >
+              <MessageCircle className="h-4 w-4" />
+              WhatsApp
+            </Button>
+          )}
+        </div>
+      )}
+
+      <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
+        <span>{order.order_deliveries?.length || 0} entrega{(order.order_deliveries?.length || 0) > 1 ? 's' : ''}</span>
+        <span className="font-medium text-foreground">R$ {order.total_value.toFixed(2)}</span>
+      </div>
+      <Button variant="outline" size="sm" onClick={onViewDetails}>
+        <Eye className="h-4 w-4" />
+        Ver Detalhes
+      </Button>
+    </div>
+  );
+};
+
+// Awaiting Confirmation Card
+const AwaitingConfirmationCard = ({ 
+  order, 
+  onConfirm, 
+  onViewDetails,
+  isPending
+}: { 
+  order: any; 
+  onConfirm: () => void; 
+  onViewDetails: () => void;
+  isPending: boolean;
+}) => {
+  const { data: profile } = useProfile(order.driver_user_id);
+
+  return (
+    <div className="card-static p-4 border-2 border-purple-200 bg-purple-50/50">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-3">
+          <span className="font-mono font-semibold">Pedido #{order.id.slice(0, 8)}</span>
+          <StatusBadge status={order.status} size="sm" />
+        </div>
+      </div>
+      
+      <p className="text-sm text-purple-700 mb-3">
+        Entregador <strong>{profile?.name || 'Entregador'}</strong> finalizou. Confirme o recebimento.
+      </p>
+
+      <div className="flex items-center gap-2">
+        <Button size="sm" onClick={onConfirm} disabled={isPending}>
+          {isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <CheckCircle2 className="h-4 w-4" />
+          )}
+          Confirmar Recebimento
+        </Button>
+        <Button variant="outline" size="sm" onClick={onViewDetails}>
+          Ver Detalhes
+        </Button>
+      </div>
+    </div>
   );
 };
 

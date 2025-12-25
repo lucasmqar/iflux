@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { getCompanyProfile } from '@/data/mockData';
+import { useCompanyProfile } from '@/hooks/useCompanyProfiles';
+import { useCreateOrder } from '@/hooks/useOrders';
 import { PACKAGE_TYPE_LABELS, PackageType } from '@/types';
 import { toast } from 'sonner';
 import { 
@@ -43,21 +44,31 @@ const packageTypes: PackageType[] = ['envelope', 'bag', 'small_box', 'large_box'
 const NovoPedido = () => {
   const { user, hasCredits } = useAuth();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
   const [openItems, setOpenItems] = useState<string[]>(['1']);
 
-  const companyProfile = user ? getCompanyProfile(user.id) : null;
+  // Fetch company profile for default address
+  const { data: companyProfile } = useCompanyProfile(user?.id);
+  const createOrderMutation = useCreateOrder();
 
   const [deliveries, setDeliveries] = useState<DeliveryItem[]>([
     {
       id: '1',
-      pickupAddress: companyProfile?.addressDefault || '',
+      pickupAddress: '',
       dropoffAddress: '',
       packageType: 'bag',
       suggestedPrice: 9,
       notes: '',
     },
   ]);
+
+  // Set default pickup address when company profile loads
+  useState(() => {
+    if (companyProfile?.address_default && deliveries[0].pickupAddress === '') {
+      setDeliveries(prev => prev.map((d, i) => 
+        i === 0 ? { ...d, pickupAddress: companyProfile.address_default || '' } : d
+      ));
+    }
+  });
 
   if (!user || user.role !== 'company') return null;
 
@@ -67,7 +78,7 @@ const NovoPedido = () => {
       ...deliveries,
       {
         id: newId,
-        pickupAddress: companyProfile?.addressDefault || '',
+        pickupAddress: companyProfile?.address_default || '',
         dropoffAddress: '',
         packageType: 'bag',
         suggestedPrice: 9,
@@ -108,6 +119,13 @@ const NovoPedido = () => {
     );
   };
 
+  // Auto-fill pickup address with company default
+  const fillDefaultAddress = (id: string) => {
+    if (companyProfile?.address_default) {
+      updateDelivery(id, 'pickupAddress', companyProfile.address_default);
+    }
+  };
+
   const totalValue = deliveries.reduce((sum, d) => sum + d.suggestedPrice, 0);
 
   const isValid = deliveries.every(d => d.pickupAddress && d.dropoffAddress);
@@ -124,10 +142,27 @@ const NovoPedido = () => {
       return;
     }
 
-    setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    toast.success('Pedido criado com sucesso!');
-    navigate('/dashboard');
+    try {
+      await createOrderMutation.mutateAsync({
+        order: {
+          company_user_id: user.id,
+          total_value: totalValue,
+          status: 'pending',
+        },
+        deliveries: deliveries.map(d => ({
+          pickup_address: d.pickupAddress,
+          dropoff_address: d.dropoffAddress,
+          package_type: d.packageType,
+          notes: d.notes || null,
+          suggested_price: d.suggestedPrice,
+        })),
+      });
+      
+      toast.success('Pedido criado com sucesso!');
+      navigate('/dashboard');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao criar pedido');
+    }
   };
 
   return (
@@ -143,6 +178,14 @@ const NovoPedido = () => {
             <p className="text-muted-foreground">Adicione as entregas do pedido</p>
           </div>
         </div>
+
+        {/* Company default address info */}
+        {companyProfile?.address_default && (
+          <div className="p-3 rounded-lg bg-blue-50 text-blue-800 text-sm">
+            <MapPin className="h-4 w-4 inline mr-2" />
+            Endereço padrão: <strong>{companyProfile.address_default}</strong>
+          </div>
+        )}
 
         {/* Deliveries */}
         <div className="space-y-3">
@@ -191,10 +234,23 @@ const NovoPedido = () => {
                   <div className="px-4 pb-4 space-y-4 border-t border-border pt-4">
                     {/* Pickup */}
                     <div className="space-y-2">
-                      <Label className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-amber-600" />
-                        Endereço de Retirada
-                      </Label>
+                      <div className="flex items-center justify-between">
+                        <Label className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-amber-600" />
+                          Endereço de Retirada
+                        </Label>
+                        {companyProfile?.address_default && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => fillDefaultAddress(delivery.id)}
+                            className="text-xs"
+                          >
+                            Usar padrão
+                          </Button>
+                        )}
+                      </div>
                       <Input
                         placeholder="Endereço completo de retirada"
                         value={delivery.pickupAddress}
@@ -322,9 +378,9 @@ const NovoPedido = () => {
             <Button
               size="lg"
               onClick={handleSubmit}
-              disabled={loading || !isValid || !hasCredits}
+              disabled={createOrderMutation.isPending || !isValid || !hasCredits}
             >
-              {loading ? (
+              {createOrderMutation.isPending ? (
                 <>
                   <Loader2 className="h-5 w-5 animate-spin" />
                   Criando...

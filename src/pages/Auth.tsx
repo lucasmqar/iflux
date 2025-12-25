@@ -6,8 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useCreateCompanyProfile } from '@/hooks/useCompanyProfiles';
+import { useCreateDriverProfile, VehicleType } from '@/hooks/useDriverProfiles';
 import fluxLogo from '@/assets/flux-logo.png';
-import { Loader2, Mail, Lock, User, Phone, AlertCircle, Building2, Truck } from 'lucide-react';
+import { Loader2, Mail, Lock, User, Phone, AlertCircle, Building2, Truck, Car, Bike, MapPin, FileText } from 'lucide-react';
 import type { AppRole } from '@/contexts/AuthContext';
 
 const Auth = () => {
@@ -17,19 +20,33 @@ const Auth = () => {
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   
-  // Signup state
+  // Signup state - Basic
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [signupName, setSignupName] = useState('');
   const [signupPhone, setSignupPhone] = useState('');
   const [signupRole, setSignupRole] = useState<'company' | 'driver'>('company');
   
+  // Signup state - Company
+  const [companyName, setCompanyName] = useState('');
+  const [companyCnpj, setCompanyCnpj] = useState('');
+  const [companyAddress, setCompanyAddress] = useState('');
+  
+  // Signup state - Driver
+  const [vehicleType, setVehicleType] = useState<VehicleType>('moto');
+  const [vehicleModel, setVehicleModel] = useState('');
+  const [vehiclePlate, setVehiclePlate] = useState('');
+  
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState<'basic' | 'details'>('basic');
   
   const { signIn, signUp, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
+  
+  const createCompanyProfile = useCreateCompanyProfile();
+  const createDriverProfile = useCreateDriverProfile();
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -54,33 +71,97 @@ const Auth = () => {
     setLoading(false);
   };
 
-  const handleSignup = async (e: React.FormEvent) => {
+  const handleSignupBasic = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setSuccess('');
-    setLoading(true);
 
     if (signupPassword.length < 6) {
       setError('A senha deve ter no mínimo 6 caracteres');
-      setLoading(false);
       return;
+    }
+
+    if (!signupPhone) {
+      setError('O WhatsApp é obrigatório');
+      return;
+    }
+
+    setStep('details');
+  };
+
+  const handleSignupComplete = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    // Validate role-specific fields
+    if (signupRole === 'company') {
+      if (!companyName.trim()) {
+        setError('Nome da empresa é obrigatório');
+        setLoading(false);
+        return;
+      }
+      if (!companyAddress.trim()) {
+        setError('Endereço é obrigatório');
+        setLoading(false);
+        return;
+      }
+    } else {
+      if (!vehicleModel.trim()) {
+        setError('Modelo do veículo é obrigatório');
+        setLoading(false);
+        return;
+      }
+      if (!vehiclePlate.trim()) {
+        setError('Placa do veículo é obrigatória');
+        setLoading(false);
+        return;
+      }
     }
 
     const result = await signUp(signupEmail, signupPassword, signupName, signupPhone, signupRole);
 
     if (result.success) {
-      setSuccess('Conta criada com sucesso! Você já pode fazer login.');
-      setActiveTab('login');
-      setLoginEmail(signupEmail);
-      setSignupEmail('');
-      setSignupPassword('');
-      setSignupName('');
-      setSignupPhone('');
+      // Wait for the auth session to be established, then create profile
+      // The profiles are created via trigger, but we need to create the role-specific profile
+      // We'll try creating the profile after a short delay since the user was just created
+      setTimeout(async () => {
+        try {
+          // Get the user ID from a fresh sign in
+          const signInResult = await signIn(signupEmail, signupPassword);
+          if (signInResult.success) {
+            // Create role-specific profile
+            // Note: This will be handled by navigating to complete profile
+            navigate('/completar-perfil');
+            return;
+          }
+        } catch (error) {
+          console.error('Error creating profile:', error);
+        }
+        
+        setSuccess('Conta criada com sucesso! Complete seu perfil após o login.');
+        setActiveTab('login');
+        setLoginEmail(signupEmail);
+        resetSignupForm();
+      }, 1000);
     } else {
       setError(result.error || 'Erro ao criar conta');
     }
 
     setLoading(false);
+  };
+
+  const resetSignupForm = () => {
+    setSignupEmail('');
+    setSignupPassword('');
+    setSignupName('');
+    setSignupPhone('');
+    setCompanyName('');
+    setCompanyCnpj('');
+    setCompanyAddress('');
+    setVehicleType('moto');
+    setVehicleModel('');
+    setVehiclePlate('');
+    setStep('basic');
   };
 
   const formatPhone = (value: string) => {
@@ -89,6 +170,22 @@ const Auth = () => {
     if (numbers.length <= 7) return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
     if (numbers.length <= 11) return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
     return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`;
+  };
+
+  const formatCnpj = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length <= 2) return numbers;
+    if (numbers.length <= 5) return `${numbers.slice(0, 2)}.${numbers.slice(2)}`;
+    if (numbers.length <= 8) return `${numbers.slice(0, 2)}.${numbers.slice(2, 5)}.${numbers.slice(5)}`;
+    if (numbers.length <= 12) return `${numbers.slice(0, 2)}.${numbers.slice(2, 5)}.${numbers.slice(5, 8)}/${numbers.slice(8)}`;
+    return `${numbers.slice(0, 2)}.${numbers.slice(2, 5)}.${numbers.slice(5, 8)}/${numbers.slice(8, 12)}-${numbers.slice(12, 14)}`;
+  };
+
+  const formatPlate = (value: string) => {
+    const clean = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (clean.length <= 3) return clean;
+    if (clean.length <= 4) return `${clean.slice(0, 3)}-${clean.slice(3)}`;
+    return `${clean.slice(0, 3)}-${clean.slice(3, 7)}`;
   };
 
   if (isLoading) {
@@ -120,7 +217,7 @@ const Auth = () => {
 
           {/* Auth form */}
           <div className="card-static p-6 sm:p-8 animate-slide-up" style={{ animationDelay: '100ms' }}>
-            <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v as 'login' | 'signup'); setError(''); setSuccess(''); }}>
+            <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v as 'login' | 'signup'); setError(''); setSuccess(''); setStep('basic'); }}>
               <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="login">Entrar</TabsTrigger>
                 <TabsTrigger value="signup">Cadastrar</TabsTrigger>
@@ -195,121 +292,284 @@ const Auth = () => {
 
               {/* Signup Tab */}
               <TabsContent value="signup">
-                <form onSubmit={handleSignup} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-name">Nome completo</Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="signup-name"
-                        type="text"
-                        placeholder="Seu nome"
-                        value={signupName}
-                        onChange={(e) => setSignupName(e.target.value)}
-                        className="pl-10"
-                        required
-                        disabled={loading}
-                      />
+                {step === 'basic' ? (
+                  <form onSubmit={handleSignupBasic} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-name">Nome completo</Label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="signup-name"
+                          type="text"
+                          placeholder="Seu nome"
+                          value={signupName}
+                          onChange={(e) => setSignupName(e.target.value)}
+                          className="pl-10"
+                          required
+                          disabled={loading}
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="signup-email"
-                        type="email"
-                        placeholder="seu@email.com"
-                        value={signupEmail}
-                        onChange={(e) => setSignupEmail(e.target.value)}
-                        className="pl-10"
-                        required
-                        disabled={loading}
-                        autoCapitalize="none"
-                        autoCorrect="off"
-                        spellCheck={false}
-                      />
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-email">Email</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="signup-email"
+                          type="email"
+                          placeholder="seu@email.com"
+                          value={signupEmail}
+                          onChange={(e) => setSignupEmail(e.target.value)}
+                          className="pl-10"
+                          required
+                          disabled={loading}
+                          autoCapitalize="none"
+                          autoCorrect="off"
+                          spellCheck={false}
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-phone">WhatsApp</Label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="signup-phone"
-                        type="tel"
-                        placeholder="(00) 00000-0000"
-                        value={signupPhone}
-                        onChange={(e) => setSignupPhone(formatPhone(e.target.value))}
-                        className="pl-10"
-                        disabled={loading}
-                      />
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-phone">WhatsApp *</Label>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="signup-phone"
+                          type="tel"
+                          placeholder="(00) 00000-0000"
+                          value={signupPhone}
+                          onChange={(e) => setSignupPhone(formatPhone(e.target.value))}
+                          className="pl-10"
+                          required
+                          disabled={loading}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">Usado para contato entre empresa e entregador</p>
                     </div>
-                  </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password">Senha</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="signup-password"
-                        type="password"
-                        placeholder="Mínimo 6 caracteres"
-                        value={signupPassword}
-                        onChange={(e) => setSignupPassword(e.target.value)}
-                        className="pl-10"
-                        required
-                        disabled={loading}
-                        minLength={6}
-                      />
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-password">Senha</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="signup-password"
+                          type="password"
+                          placeholder="Mínimo 6 caracteres"
+                          value={signupPassword}
+                          onChange={(e) => setSignupPassword(e.target.value)}
+                          className="pl-10"
+                          required
+                          disabled={loading}
+                          minLength={6}
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="space-y-3">
-                    <Label>Tipo de conta</Label>
-                    <RadioGroup
-                      value={signupRole}
-                      onValueChange={(v) => setSignupRole(v as 'company' | 'driver')}
-                      className="grid grid-cols-2 gap-3"
+                    <div className="space-y-3">
+                      <Label>Tipo de conta</Label>
+                      <RadioGroup
+                        value={signupRole}
+                        onValueChange={(v) => setSignupRole(v as 'company' | 'driver')}
+                        className="grid grid-cols-2 gap-3"
+                      >
+                        <div>
+                          <RadioGroupItem value="company" id="role-company" className="peer sr-only" />
+                          <Label
+                            htmlFor="role-company"
+                            className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                          >
+                            <Building2 className="mb-2 h-6 w-6" />
+                            <span className="text-sm font-medium">Empresa</span>
+                            <span className="text-xs text-muted-foreground">Solicitar entregas</span>
+                          </Label>
+                        </div>
+                        <div>
+                          <RadioGroupItem value="driver" id="role-driver" className="peer sr-only" />
+                          <Label
+                            htmlFor="role-driver"
+                            className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                          >
+                            <Truck className="mb-2 h-6 w-6" />
+                            <span className="text-sm font-medium">Entregador</span>
+                            <span className="text-xs text-muted-foreground">Realizar entregas</span>
+                          </Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+
+                    <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                      Continuar
+                    </Button>
+                  </form>
+                ) : (
+                  <form onSubmit={handleSignupComplete} className="space-y-4">
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setStep('basic')}
+                      className="mb-2"
                     >
-                      <div>
-                        <RadioGroupItem value="company" id="role-company" className="peer sr-only" />
-                        <Label
-                          htmlFor="role-company"
-                          className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
-                        >
-                          <Building2 className="mb-2 h-6 w-6" />
-                          <span className="text-sm font-medium">Empresa</span>
-                          <span className="text-xs text-muted-foreground">Solicitar entregas</span>
-                        </Label>
-                      </div>
-                      <div>
-                        <RadioGroupItem value="driver" id="role-driver" className="peer sr-only" />
-                        <Label
-                          htmlFor="role-driver"
-                          className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
-                        >
-                          <Truck className="mb-2 h-6 w-6" />
-                          <span className="text-sm font-medium">Entregador</span>
-                          <span className="text-xs text-muted-foreground">Realizar entregas</span>
-                        </Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
+                      ← Voltar
+                    </Button>
 
-                  <Button type="submit" className="w-full" size="lg" disabled={loading}>
-                    {loading ? (
+                    {signupRole === 'company' ? (
                       <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Criando conta...
+                        <div className="p-3 rounded-lg bg-blue-50 text-blue-800 text-sm mb-4">
+                          <Building2 className="h-4 w-4 inline mr-2" />
+                          Complete os dados da sua empresa
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="company-name">Nome da Empresa *</Label>
+                          <div className="relative">
+                            <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              id="company-name"
+                              type="text"
+                              placeholder="Nome da sua empresa"
+                              value={companyName}
+                              onChange={(e) => setCompanyName(e.target.value)}
+                              className="pl-10"
+                              required
+                              disabled={loading}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="company-cnpj">CNPJ (opcional)</Label>
+                          <div className="relative">
+                            <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              id="company-cnpj"
+                              type="text"
+                              placeholder="00.000.000/0000-00"
+                              value={companyCnpj}
+                              onChange={(e) => setCompanyCnpj(formatCnpj(e.target.value))}
+                              className="pl-10"
+                              disabled={loading}
+                              maxLength={18}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="company-address">Endereço Padrão *</Label>
+                          <div className="relative">
+                            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              id="company-address"
+                              type="text"
+                              placeholder="Endereço completo para retiradas"
+                              value={companyAddress}
+                              onChange={(e) => setCompanyAddress(e.target.value)}
+                              className="pl-10"
+                              required
+                              disabled={loading}
+                            />
+                          </div>
+                          <p className="text-xs text-muted-foreground">Será usado como endereço de retirada padrão nos pedidos</p>
+                        </div>
                       </>
                     ) : (
-                      'Criar Conta'
+                      <>
+                        <div className="p-3 rounded-lg bg-emerald-50 text-emerald-800 text-sm mb-4">
+                          <Truck className="h-4 w-4 inline mr-2" />
+                          Complete os dados do seu veículo
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Tipo de Veículo *</Label>
+                          <RadioGroup
+                            value={vehicleType}
+                            onValueChange={(v) => setVehicleType(v as VehicleType)}
+                            className="grid grid-cols-3 gap-3"
+                          >
+                            <div>
+                              <RadioGroupItem value="moto" id="vehicle-moto" className="peer sr-only" />
+                              <Label
+                                htmlFor="vehicle-moto"
+                                className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                              >
+                                <span className="text-2xl mb-1">🏍️</span>
+                                <span className="text-xs font-medium">Moto</span>
+                              </Label>
+                            </div>
+                            <div>
+                              <RadioGroupItem value="car" id="vehicle-car" className="peer sr-only" />
+                              <Label
+                                htmlFor="vehicle-car"
+                                className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                              >
+                                <span className="text-2xl mb-1">🚗</span>
+                                <span className="text-xs font-medium">Carro</span>
+                              </Label>
+                            </div>
+                            <div>
+                              <RadioGroupItem value="bike" id="vehicle-bike" className="peer sr-only" />
+                              <Label
+                                htmlFor="vehicle-bike"
+                                className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                              >
+                                <span className="text-2xl mb-1">🚲</span>
+                                <span className="text-xs font-medium">Bike</span>
+                              </Label>
+                            </div>
+                          </RadioGroup>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="vehicle-model">Modelo do Veículo *</Label>
+                          <div className="relative">
+                            <Car className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              id="vehicle-model"
+                              type="text"
+                              placeholder="Ex: Honda CG 160"
+                              value={vehicleModel}
+                              onChange={(e) => setVehicleModel(e.target.value)}
+                              className="pl-10"
+                              required
+                              disabled={loading}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="vehicle-plate">Placa do Veículo *</Label>
+                          <div className="relative">
+                            <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              id="vehicle-plate"
+                              type="text"
+                              placeholder="ABC-1234"
+                              value={vehiclePlate}
+                              onChange={(e) => setVehiclePlate(formatPlate(e.target.value))}
+                              className="pl-10"
+                              required
+                              disabled={loading}
+                              maxLength={8}
+                            />
+                          </div>
+                        </div>
+                      </>
                     )}
-                  </Button>
-                </form>
+
+                    <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                      {loading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Criando conta...
+                        </>
+                      ) : (
+                        'Criar Conta'
+                      )}
+                    </Button>
+                  </form>
+                )}
               </TabsContent>
             </Tabs>
           </div>
