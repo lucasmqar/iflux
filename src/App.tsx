@@ -19,9 +19,16 @@ import Notificacoes from "./pages/Notificacoes";
 
 // Empresa pages
 import NovoPedido from "./pages/empresa/NovoPedido";
+import PedidosPendentes from "./pages/empresa/PedidosPendentes";
+import PedidosEmAndamento from "./pages/empresa/PedidosEmAndamento";
+import ConfirmacaoEntrega from "./pages/empresa/ConfirmacaoEntrega";
+import EmpresaPedidosConcluidos from "./pages/empresa/PedidosConcluidos";
 
 // Entregador pages
 import PedidosDisponiveis from "./pages/entregador/PedidosDisponiveis";
+import PedidosAceitos from "./pages/entregador/PedidosAceitos";
+import PedidosFinalizados from "./pages/entregador/PedidosFinalizados";
+import EntregadorPedidosConcluidos from "./pages/entregador/PedidosConcluidos";
 
 // Admin pages
 import GerenciarUsuarios from "./pages/admin/GerenciarUsuarios";
@@ -57,9 +64,16 @@ const App = () => (
 
             {/* Empresa routes */}
             <Route path="/novo-pedido" element={<NovoPedido />} />
+            <Route path="/pedidos-pendentes" element={<PedidosPendentes />} />
+            <Route path="/pedidos-em-andamento" element={<PedidosEmAndamento />} />
+            <Route path="/confirmacao-entrega" element={<ConfirmacaoEntrega />} />
+            <Route path="/empresa/concluidos" element={<EmpresaPedidosConcluidos />} />
 
             {/* Entregador routes */}
-            <Route path="/disponiveis" element={<PedidosDisponiveis />} />
+            <Route path="/pedidos-disponiveis" element={<PedidosDisponiveis />} />
+            <Route path="/pedidos-aceitos" element={<PedidosAceitos />} />
+            <Route path="/pedidos-finalizados" element={<PedidosFinalizados />} />
+            <Route path="/entregador/concluidos" element={<EntregadorPedidosConcluidos />} />
 
             {/* Admin routes */}
             <Route path="/admin/usuarios" element={<GerenciarUsuarios />} />
