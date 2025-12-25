@@ -106,7 +106,7 @@ const EntregadorDashboard = () => {
           <p className="text-muted-foreground">Olá, {user.name}</p>
         </div>
 
-        {/* Stats - Clickable */}
+        {/* Stats - Clickable - 4 Views */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <ClickableStatsCard
             title="Disponíveis"
@@ -122,22 +122,23 @@ const EntregadorDashboard = () => {
             icon={Truck}
             iconClassName="bg-blue-100"
             delay={50}
-            href="/meus-pedidos?status=accepted"
+            href="/pedidos-aceitos"
+          />
+          <ClickableStatsCard
+            title="Aguardando"
+            value={driverCompletedOrders.length}
+            icon={Package}
+            iconClassName="bg-purple-100"
+            delay={100}
+            href="/pedidos-finalizados"
           />
           <ClickableStatsCard
             title="Concluídos"
             value={stats.completed}
             icon={CheckCircle2}
             iconClassName="bg-emerald-100"
-            delay={100}
-            href="/meus-pedidos?status=completed"
-          />
-          <ClickableStatsCard
-            title="Ganhos"
-            value={`R$ ${estimatedEarnings.toFixed(2)}`}
-            icon={DollarSign}
-            iconClassName="bg-purple-100"
             delay={150}
+            href="/entregador/concluidos"
           />
         </div>
 
@@ -150,7 +151,7 @@ const EntregadorDashboard = () => {
                 Pedidos Disponíveis ({availableOrders.length})
               </h2>
               <Button variant="ghost" size="sm" onClick={() => navigate('/pedidos-disponiveis')}>
-                Ver todos
+                Ver todos ({availableOrders.length})
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
@@ -220,12 +221,12 @@ const EntregadorDashboard = () => {
         {completedOrders.length > 0 && (
           <section className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                Concluídos
-              </h2>
-              {completedOrders.length > 3 && (
-                <Button variant="ghost" size="sm" onClick={() => navigate('/meus-pedidos?status=completed')}>
+            <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+              Concluídos
+            </h2>
+            {completedOrders.length > 3 && (
+              <Button variant="ghost" size="sm" onClick={() => navigate('/entregador/concluidos')}>
                   Ver todos ({completedOrders.length})
                   <ChevronRight className="h-4 w-4" />
                 </Button>

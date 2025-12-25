@@ -14,10 +14,9 @@ import {
   Package, 
   Clock, 
   CheckCircle2, 
-  XCircle, 
+  XCircle,
   Truck,
   Plus,
-  CreditCard,
   MessageCircle,
   Eye,
   User,
@@ -119,15 +118,15 @@ const EmpresaDashboard = () => {
           </Button>
         </div>
 
-        {/* Stats - Clickable */}
+        {/* Stats - Clickable - 4 Views */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <ClickableStatsCard
-            title="Aguardando"
+            title="Pendentes"
             value={stats.pending}
             icon={Clock}
             iconClassName="bg-amber-100"
             delay={0}
-            href="/meus-pedidos?status=pending"
+            href="/pedidos-pendentes"
           />
           <ClickableStatsCard
             title="Em Andamento"
@@ -135,23 +134,23 @@ const EmpresaDashboard = () => {
             icon={Truck}
             iconClassName="bg-blue-100"
             delay={50}
-            href="/meus-pedidos?status=accepted"
+            href="/pedidos-em-andamento"
+          />
+          <ClickableStatsCard
+            title="Confirmação"
+            value={driverCompletedOrders.length}
+            icon={Package}
+            iconClassName="bg-purple-100"
+            delay={100}
+            href="/confirmacao-entrega"
           />
           <ClickableStatsCard
             title="Concluídos"
             value={stats.completed}
             icon={CheckCircle2}
             iconClassName="bg-emerald-100"
-            delay={100}
-            href="/meus-pedidos?status=completed"
-          />
-          <ClickableStatsCard
-            title="Cancelados"
-            value={stats.cancelled}
-            icon={XCircle}
-            iconClassName="bg-red-100"
             delay={150}
-            href="/meus-pedidos?status=cancelled"
+            href="/empresa/concluidos"
           />
         </div>
 
@@ -249,12 +248,12 @@ const EmpresaDashboard = () => {
                 <CheckCircle2 className="h-5 w-5 text-emerald-600" />
                 Concluídos
               </h2>
-              {completedOrders.length > 3 && (
-                <Button variant="ghost" size="sm" onClick={() => navigate('/meus-pedidos?status=completed')}>
-                  Ver todos ({completedOrders.length})
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              )}
+            {completedOrders.length > 3 && (
+              <Button variant="ghost" size="sm" onClick={() => navigate('/empresa/concluidos')}>
+                Ver todos ({completedOrders.length})
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            )}
             </div>
             <div className="space-y-3">
               {completedOrders.slice(0, 3).map((order) => (
