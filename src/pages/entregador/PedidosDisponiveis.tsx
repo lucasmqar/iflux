@@ -6,6 +6,9 @@ import { useCompanyProfile } from '@/hooks/useCompanyProfiles';
 import { useProfile } from '@/hooks/useProfile';
 import { formatBrasiliaDateShort, PACKAGE_TYPE_LABELS } from '@/types';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { 
   ArrowLeft, 
   Building2,
@@ -14,15 +17,42 @@ import {
   CheckCircle2,
   Clock,
   Loader2,
+  MapPin,
+  DollarSign,
+  Sparkles,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 
 const PedidosDisponiveis = () => {
   const { user, hasCredits } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   
   const { data: availableOrders = [], isLoading } = useAvailableOrders();
   const updateStatusMutation = useUpdateOrderStatus();
+
+  // Real-time subscription para novos pedidos
+  useEffect(() => {
+    const channel = supabase
+      .channel('driver-available-orders')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['orders', 'available'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   if (!user || user.role !== 'driver') return null;
 
@@ -39,10 +69,10 @@ const PedidosDisponiveis = () => {
         status: 'accepted',
         driverUserId: user.id,
       });
-      toast.success('Pedido aceito!');
+      toast.success('Pedido aceito com sucesso! 🎉');
       navigate(`/pedido/${orderId}`);
-    } catch (error) {
-      toast.error('Erro ao aceitar pedido');
+    } catch (error: any) {
+      toast.error(error?.message || 'Erro ao aceitar pedido');
     }
   };
 
@@ -64,11 +94,40 @@ const PedidosDisponiveis = () => {
           <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div>
-            <h1 className="text-2xl font-semibold text-foreground">Pedidos Disponíveis</h1>
-            <p className="text-muted-foreground">{availableOrders.length} pedidos aguardando</p>
+          <div className="flex-1">
+            <h1 className="text-2xl font-semibold text-foreground flex items-center gap-2">
+              <Sparkles className="h-6 w-6 text-amber-500" />
+              Pedidos Disponíveis
+            </h1>
+            <p className="text-muted-foreground">{availableOrders.length} pedidos aguardando você</p>
           </div>
         </div>
+
+        {/* Dica para entregador */}
+        {hasCredits && availableOrders.length > 0 && (
+          <div className="p-4 rounded-xl bg-gradient-to-r from-amber-50 to-amber-100 border border-amber-200">
+            <p className="text-sm text-amber-800 font-medium flex items-center gap-2">
+              <DollarSign className="h-4 w-4" />
+              Aceite pedidos rápido para ganhar mais! Quanto antes você aceitar, mais entregas você faz.
+            </p>
+          </div>
+        )}
+
+        {/* No credits warning */}
+        {!hasCredits && (
+          <div className="p-4 rounded-xl bg-red-50 border border-red-200">
+            <p className="text-sm text-red-800 font-medium">
+              🔒 Você precisa de créditos ativos para aceitar pedidos.
+            </p>
+            <Button 
+              size="sm" 
+              className="mt-2" 
+              onClick={() => navigate('/creditos')}
+            >
+              Ver Créditos
+            </Button>
+          </div>
+        )}
 
         {/* Orders list */}
         <div className="space-y-4">
@@ -85,10 +144,13 @@ const PedidosDisponiveis = () => {
           ))}
 
           {availableOrders.length === 0 && (
-            <div className="text-center py-12">
-              <Package className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
+            <div className="text-center py-16">
+              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-muted/50 flex items-center justify-center">
+                <Package className="h-10 w-10 text-muted-foreground/50" />
+              </div>
               <p className="text-lg font-medium text-foreground mb-1">Nenhum pedido disponível</p>
-              <p className="text-muted-foreground">Novos pedidos aparecerão aqui automaticamente</p>
+              <p className="text-muted-foreground mb-4">Novos pedidos aparecerão aqui automaticamente.</p>
+              <p className="text-sm text-muted-foreground">Fique de olho! A lista é atualizada em tempo real.</p>
             </div>
           )}
         </div>
@@ -115,58 +177,95 @@ const OrderCard = ({
   const { data: companyProfile } = useCompanyProfile(order.company_user_id);
   const { data: profile } = useProfile(order.company_user_id);
 
+  const deliveriesCount = order.order_deliveries?.length || 0;
+
   return (
     <div
-      className="card-static p-5 opacity-0 animate-fade-in"
-      style={{ animationDelay: `${index * 50}ms` }}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <Building2 className="h-5 w-5 text-muted-foreground" />
-          <span className="font-semibold text-foreground">
-            {companyProfile?.company_name || profile?.name || 'Empresa'}
-          </span>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Clock className="h-4 w-4" />
-          {formatBrasiliaDateShort(new Date(order.created_at))}
-        </div>
-      </div>
-      
-      {companyProfile?.address_default && (
-        <p className="text-sm text-muted-foreground mb-3">
-          📍 {companyProfile.address_default}
-        </p>
+      className={cn(
+        "card-static overflow-hidden opacity-0 animate-fade-in",
+        "hover:shadow-lg hover:border-primary/30 transition-all duration-300"
       )}
-
-      <div className="flex flex-wrap items-center gap-2 mb-4 text-sm">
-        <span className="px-2 py-1 bg-secondary rounded text-muted-foreground">
-          {order.order_deliveries?.length || 0} entrega{(order.order_deliveries?.length || 0) > 1 ? 's' : ''}
-        </span>
-        {order.order_deliveries?.slice(0, 3).map((d: any) => (
-          <span key={d.id} className="px-2 py-1 bg-secondary rounded text-muted-foreground">
-            {PACKAGE_TYPE_LABELS[d.package_type as keyof typeof PACKAGE_TYPE_LABELS]}
-          </span>
-        ))}
-        <span className="font-semibold text-foreground ml-auto text-lg">
-          R$ {order.total_value.toFixed(2)}
-        </span>
+      style={{ animationDelay: `${index * 80}ms` }}
+    >
+      {/* Header com valor destacado */}
+      <div className="p-4 bg-gradient-to-r from-primary/5 to-primary/10 border-b border-border">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <Building2 className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <p className="font-semibold text-foreground">
+                {companyProfile?.company_name || profile?.name || 'Empresa'}
+              </p>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Clock className="h-3 w-3" />
+                {formatBrasiliaDateShort(new Date(order.created_at))}
+              </div>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-2xl font-bold text-primary">
+              R$ {order.total_value.toFixed(2)}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {deliveriesCount} entrega{deliveriesCount > 1 ? 's' : ''}
+            </p>
+          </div>
+        </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" onClick={onViewDetails}>
-          <Eye className="h-4 w-4" />
-          Detalhes
-        </Button>
-        <Button size="sm" onClick={onAccept} disabled={!hasCredits || isPending}>
-          {isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <CheckCircle2 className="h-4 w-4" />
+      {/* Detalhes */}
+      <div className="p-4 space-y-3">
+        {companyProfile?.address_default && (
+          <div className="flex items-start gap-2 text-sm">
+            <MapPin className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+            <span className="text-muted-foreground">{companyProfile.address_default}</span>
+          </div>
+        )}
+
+        {/* Tipos de pacote */}
+        <div className="flex flex-wrap items-center gap-2">
+          {order.order_deliveries?.slice(0, 4).map((d: any) => (
+            <span 
+              key={d.id} 
+              className="px-2.5 py-1 bg-secondary rounded-full text-xs font-medium text-muted-foreground"
+            >
+              {PACKAGE_TYPE_LABELS[d.package_type as keyof typeof PACKAGE_TYPE_LABELS]}
+            </span>
+          ))}
+          {deliveriesCount > 4 && (
+            <span className="px-2.5 py-1 bg-secondary rounded-full text-xs font-medium text-muted-foreground">
+              +{deliveriesCount - 4} mais
+            </span>
           )}
-          Aceitar
-        </Button>
+        </div>
+
+        {/* Ações */}
+        <div className="flex items-center gap-2 pt-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={onViewDetails}
+            className="flex-1"
+          >
+            <Eye className="h-4 w-4" />
+            Ver Detalhes
+          </Button>
+          <Button 
+            size="sm" 
+            onClick={onAccept} 
+            disabled={!hasCredits || isPending}
+            className="flex-1 bg-primary hover:bg-primary/90"
+          >
+            {isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <CheckCircle2 className="h-4 w-4" />
+            )}
+            Aceitar Pedido
+          </Button>
+        </div>
       </div>
     </div>
   );

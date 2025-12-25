@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AppLayout } from '@/components/AppLayout';
 import { ClickableStatsCard } from '@/components/ClickableStatsCard';
@@ -9,6 +10,8 @@ import { ExpiredCreditBanner, PromoBanner } from '@/components/banners';
 import { StatusBadge } from '@/components/StatusBadge';
 import { openWhatsApp, getAddCreditsWhatsAppUrl } from '@/lib/whatsapp';
 import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
+import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 import { 
   Package, 
   Clock, 
@@ -28,9 +31,33 @@ import { toast } from 'sonner';
 const EntregadorDashboard = () => {
   const { user, hasCredits } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   // Enable realtime notifications
   useRealtimeNotifications(user?.id, user?.role ?? undefined);
+
+  // Real-time subscription para pedidos disponíveis
+  useEffect(() => {
+    const channel = supabase
+      .channel('dashboard-available-orders')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['orders', 'available'] });
+          queryClient.invalidateQueries({ queryKey: ['orders', 'driver', user?.id] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient, user?.id]);
 
   // Use real data from Supabase
   const { data: myOrders = [], isLoading: ordersLoading } = useDriverOrders(user?.id);

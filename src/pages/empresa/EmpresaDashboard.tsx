@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AppLayout } from '@/components/AppLayout';
 import { ClickableStatsCard } from '@/components/ClickableStatsCard';
@@ -9,6 +10,8 @@ import { ExpiredCreditBanner, PromoBanner } from '@/components/banners';
 import { StatusBadge } from '@/components/StatusBadge';
 import { openWhatsApp, getAddCreditsWhatsAppUrl } from '@/lib/whatsapp';
 import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
+import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { 
   Package, 
@@ -29,9 +32,35 @@ import { formatBrasiliaDateShort } from '@/types';
 const EmpresaDashboard = () => {
   const { user, hasCredits } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   // Enable realtime notifications
   useRealtimeNotifications(user?.id, user?.role ?? undefined);
+
+  // Real-time subscription para pedidos da empresa
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel('dashboard-company-orders')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+          filter: `company_user_id=eq.${user.id}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['orders', 'company', user.id] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient, user?.id]);
 
   // Use real data from Supabase
   const { data: orders = [], isLoading } = useOrders(user?.id);

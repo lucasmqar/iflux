@@ -72,7 +72,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     if (user.role === 'driver') {
       return [
         ...baseItems,
-        { label: 'Disponíveis', icon: Truck, path: '/disponiveis' },
+        { label: 'Disponíveis', icon: Truck, path: '/pedidos-disponiveis' },
         { label: 'Meus Pedidos', icon: Package, path: '/meus-pedidos' },
       ];
     }
