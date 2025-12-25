@@ -33,7 +33,7 @@ const Creditos = () => {
         {/* Current status */}
         <div className="card-static p-6 animate-fade-in">
           <h3 className="text-lg font-semibold text-foreground mb-4">Status Atual</h3>
-          <CreditsBadge user={user} size="lg" />
+          <CreditsBadge size="lg" />
         </div>
 
         {/* How it works */}

@@ -29,17 +29,17 @@ const roleConfig = {
 };
 
 const Perfil = () => {
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   if (!user) return null;
 
-  const config = roleConfig[user.role];
+  const config = user.role ? roleConfig[user.role] : roleConfig.company;
   const RoleIcon = config.icon;
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await signOut();
     navigate('/');
   };
 
@@ -82,7 +82,7 @@ const Perfil = () => {
         {/* Credits status */}
         <div className="card-static p-6 animate-fade-in" style={{ animationDelay: '50ms' }}>
           <h3 className="text-lg font-semibold text-foreground mb-4">Status de Créditos</h3>
-          <CreditsBadge user={user} size="lg" />
+          <CreditsBadge size="lg" />
 
           <div className="mt-6 space-y-3">
             <Button
