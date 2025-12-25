@@ -210,7 +210,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setUser(prev => prev ? { ...prev, ...updates } : null);
   }, []);
 
-  const hasCreditsActive = credits ? new Date(credits.validUntil) > new Date() : false;
+  // Admin has unlimited access - no credits required
+  const isAdmin = user?.role === 'admin';
+  const hasCreditsActive = isAdmin || (credits ? new Date(credits.validUntil) > new Date() : false);
 
   return (
     <AuthContext.Provider
