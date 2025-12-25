@@ -7,7 +7,7 @@ interface AuthContextType {
   credits: Credits | null;
   isAuthenticated: boolean;
   hasCredits: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (login: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   updateUser: (updates: Partial<User>) => void;
 }
@@ -18,15 +18,31 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<User | null>(null);
   const [credits, setCredits] = useState<Credits | null>(null);
 
-  const login = useCallback(async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+  const login = useCallback(async (login: string, password: string): Promise<{ success: boolean; error?: string }> => {
     // Simulate API call delay
     await new Promise(resolve => setTimeout(resolve, 800));
-    
-    // Find user by email (in real app, validate password too)
-    const foundUser = mockUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
-    
+
+    const normalizedLogin = login.trim().toLowerCase();
+
+    // Demo credentials (mock-only)
+    const demoLoginToEmail: Record<string, { email: string; password: string }> = {
+      admin: { email: 'admin@flux.com', password: 'admin' },
+      loja: { email: 'empresa@flux.com', password: 'loja' },
+      entregador: { email: 'joao@entregador.com', password: 'entregador' },
+    };
+
+    const resolved = demoLoginToEmail[normalizedLogin];
+    const resolvedEmail = resolved?.email ?? normalizedLogin;
+
+    const foundUser = mockUsers.find(u => u.email.toLowerCase() === resolvedEmail);
+
     if (!foundUser) {
-      return { success: false, error: 'E-mail ou senha incorretos' };
+      return { success: false, error: 'Login ou senha incorretos' };
+    }
+
+    // If using one of the 3 demo logins, enforce its password
+    if (resolved && password !== resolved.password) {
+      return { success: false, error: 'Login ou senha incorretos' };
     }
 
     if (foundUser.isBanned) {
@@ -34,7 +50,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     const userCredits = getUserCredits(foundUser.id);
-    
+
     setUser(foundUser);
     setCredits(userCredits || null);
     return { success: true };

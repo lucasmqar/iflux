@@ -8,11 +8,11 @@ import fluxLogo from '@/assets/flux-logo.png';
 import { Loader2, Mail, Lock, AlertCircle } from 'lucide-react';
 
 const Login = () => {
-  const [email, setEmail] = useState('');
+  const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login: doLogin } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -20,7 +20,7 @@ const Login = () => {
     setError('');
     setLoading(true);
 
-    const result = await login(email, password);
+    const result = await doLogin(login, password);
 
     if (result.success) {
       navigate('/dashboard');
@@ -63,18 +63,21 @@ const Login = () => {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="email">E-mail</Label>
+                <Label htmlFor="login">Login</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    id="email"
-                    type="email"
-                    placeholder="seu@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    id="login"
+                    type="text"
+                    placeholder="admin | loja | entregador"
+                    value={login}
+                    onChange={(e) => setLogin(e.target.value)}
                     className="pl-10"
                     required
                     disabled={loading}
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
                   />
                 </div>
               </div>
@@ -116,20 +119,20 @@ const Login = () => {
             {/* Demo accounts */}
             <div className="mt-6 pt-6 border-t border-border">
               <p className="text-xs text-muted-foreground text-center mb-3">
-                Contas de demonstração:
+                Logins de demonstração (login / senha):
               </p>
               <div className="grid gap-2 text-xs">
                 <div className="flex items-center justify-between p-2 rounded bg-secondary/50">
                   <span className="text-muted-foreground">Admin:</span>
-                  <code className="text-foreground">admin@flux.com</code>
+                  <code className="text-foreground">admin / admin</code>
                 </div>
                 <div className="flex items-center justify-between p-2 rounded bg-secondary/50">
-                  <span className="text-muted-foreground">Empresa:</span>
-                  <code className="text-foreground">loja@express.com</code>
+                  <span className="text-muted-foreground">Loja:</span>
+                  <code className="text-foreground">loja / loja</code>
                 </div>
                 <div className="flex items-center justify-between p-2 rounded bg-secondary/50">
                   <span className="text-muted-foreground">Entregador:</span>
-                  <code className="text-foreground">joao@entregador.com</code>
+                  <code className="text-foreground">entregador / entregador</code>
                 </div>
               </div>
             </div>
