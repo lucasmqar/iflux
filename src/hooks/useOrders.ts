@@ -96,6 +96,35 @@ export const useOrder = (orderId?: string) => {
   });
 };
 
+// Validation constants matching database constraints
+const MAX_ADDRESS_LENGTH = 500;
+const MIN_ADDRESS_LENGTH = 5;
+const MAX_NOTES_LENGTH = 500;
+const MIN_PRICE = 0;
+const MAX_PRICE = 10000;
+const MAX_TOTAL_VALUE = 100000;
+
+const validateDelivery = (delivery: Omit<TablesInsert<'order_deliveries'>, 'id' | 'order_id' | 'created_at'>) => {
+  if (!delivery.pickup_address || delivery.pickup_address.length < MIN_ADDRESS_LENGTH) {
+    throw new Error('Endereço de retirada muito curto (mínimo 5 caracteres)');
+  }
+  if (delivery.pickup_address.length > MAX_ADDRESS_LENGTH) {
+    throw new Error('Endereço de retirada muito longo (máximo 500 caracteres)');
+  }
+  if (!delivery.dropoff_address || delivery.dropoff_address.length < MIN_ADDRESS_LENGTH) {
+    throw new Error('Endereço de entrega muito curto (mínimo 5 caracteres)');
+  }
+  if (delivery.dropoff_address.length > MAX_ADDRESS_LENGTH) {
+    throw new Error('Endereço de entrega muito longo (máximo 500 caracteres)');
+  }
+  if (delivery.notes && delivery.notes.length > MAX_NOTES_LENGTH) {
+    throw new Error('Observações muito longas (máximo 500 caracteres)');
+  }
+  if (delivery.suggested_price < MIN_PRICE || delivery.suggested_price > MAX_PRICE) {
+    throw new Error(`Preço inválido (deve ser entre R$${MIN_PRICE} e R$${MAX_PRICE})`);
+  }
+};
+
 export const useCreateOrder = () => {
   const queryClient = useQueryClient();
   
@@ -107,6 +136,14 @@ export const useCreateOrder = () => {
       order: Omit<TablesInsert<'orders'>, 'id' | 'created_at' | 'updated_at'>; 
       deliveries: Omit<TablesInsert<'order_deliveries'>, 'id' | 'order_id' | 'created_at'>[];
     }) => {
+      // Validate all deliveries before inserting
+      deliveries.forEach(validateDelivery);
+      
+      // Validate total value
+      if (order.total_value < MIN_PRICE || order.total_value > MAX_TOTAL_VALUE) {
+        throw new Error(`Valor total inválido (deve ser entre R$${MIN_PRICE} e R$${MAX_TOTAL_VALUE})`);
+      }
+      
       // Create order
       const { data: orderData, error: orderError } = await supabase
         .from('orders')

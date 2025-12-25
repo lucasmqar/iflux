@@ -178,6 +178,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           data: {
             name,
             phone,
+            role, // Pass role in metadata for trigger to pick up
           },
         },
       });
@@ -189,16 +190,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return { success: false, error: error.message };
       }
 
-      // If auto-confirm is enabled, the user will be signed in automatically
-      // We need to create the role for this user
-      if (data.user) {
-        // Wait a bit for the trigger to create the profile
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // The role insertion needs to be done by an admin or via a backend function
-        // For now, we'll create a pending registration flow
-        // In production, you'd want to set up a proper onboarding flow
-      }
+      // Role is now automatically assigned by the handle_new_user_role trigger
+      // based on the role passed in user metadata
 
       return { success: true };
     } catch (error) {
