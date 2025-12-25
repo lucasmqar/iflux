@@ -79,3 +79,22 @@ export const useUpdateAdminAlert = () => {
     },
   });
 };
+
+export const useDeleteAdminAlert = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (alertId: string) => {
+      const { error } = await supabase
+        .from('admin_alerts')
+        .delete()
+        .eq('id', alertId);
+      
+      if (error) throw error;
+      return alertId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminAlerts'] });
+    },
+  });
+};
