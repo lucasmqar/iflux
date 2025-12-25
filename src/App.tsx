@@ -10,6 +10,8 @@ import Login from "./pages/Login";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Perfil from "./pages/Perfil";
+import CompletarPerfil from "./pages/CompletarPerfil";
+import Configuracoes from "./pages/Configuracoes";
 import Creditos from "./pages/Creditos";
 import MeusPedidos from "./pages/MeusPedidos";
 import PedidoDetalhes from "./pages/PedidoDetalhes";
@@ -46,6 +48,8 @@ const App = () => (
             {/* Protected routes */}
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/perfil" element={<Perfil />} />
+            <Route path="/completar-perfil" element={<CompletarPerfil />} />
+            <Route path="/configuracoes" element={<Configuracoes />} />
             <Route path="/creditos" element={<Creditos />} />
             <Route path="/meus-pedidos" element={<MeusPedidos />} />
             <Route path="/pedido/:id" element={<PedidoDetalhes />} />

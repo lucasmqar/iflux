@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { AppLayout } from '@/components/AppLayout';
+import { TipCard } from '@/components/TipCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,7 +18,9 @@ import {
   MapPin, 
   FileText,
   CheckCircle2,
-  ArrowLeft 
+  ArrowLeft,
+  ArrowRight,
+  User
 } from 'lucide-react';
 
 const CompletarPerfil = () => {
@@ -31,6 +34,10 @@ const CompletarPerfil = () => {
   const updateCompanyProfile = useUpdateCompanyProfile();
   const createDriverProfile = useCreateDriverProfile();
   const updateDriverProfile = useUpdateDriverProfile();
+
+  // Step control
+  const [step, setStep] = useState(1);
+  const totalSteps = 2;
 
   // Company fields
   const [companyName, setCompanyName] = useState('');
@@ -78,8 +85,23 @@ const CompletarPerfil = () => {
   const formatPlate = (value: string) => {
     const clean = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
     if (clean.length <= 3) return clean;
-    if (clean.length <= 4) return `${clean.slice(0, 3)}-${clean.slice(3)}`;
     return `${clean.slice(0, 3)}-${clean.slice(3, 7)}`;
+  };
+
+  const validateStep1 = () => {
+    if (isCompany) {
+      if (!companyName.trim()) {
+        toast.error('Nome da empresa é obrigatório');
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const handleNextStep = () => {
+    if (validateStep1()) {
+      setStep(2);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -88,11 +110,6 @@ const CompletarPerfil = () => {
 
     try {
       if (isCompany) {
-        if (!companyName.trim()) {
-          toast.error('Nome da empresa é obrigatório');
-          setLoading(false);
-          return;
-        }
         if (!companyAddress.trim()) {
           toast.error('Endereço é obrigatório');
           setLoading(false);
@@ -116,7 +133,7 @@ const CompletarPerfil = () => {
             address_default: companyAddress,
           });
         }
-        toast.success('Perfil da empresa atualizado!');
+        toast.success('Perfil da empresa completo!');
       } else if (isDriver) {
         if (!vehicleModel.trim()) {
           toast.error('Modelo do veículo é obrigatório');
@@ -146,7 +163,7 @@ const CompletarPerfil = () => {
             plate: vehiclePlate,
           });
         }
-        toast.success('Perfil do entregador atualizado!');
+        toast.success('Perfil do entregador completo!');
       }
 
       navigate('/dashboard');
@@ -171,176 +188,251 @@ const CompletarPerfil = () => {
     <AppLayout>
       <div className="max-w-md mx-auto space-y-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}>
+          <Button variant="ghost" size="icon" onClick={() => step === 1 ? navigate('/dashboard') : setStep(1)}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div>
+          <div className="flex-1">
             <h1 className="text-2xl font-semibold text-foreground">Completar Perfil</h1>
             <p className="text-muted-foreground">
-              {isCompany ? 'Dados da sua empresa' : 'Dados do seu veículo'}
+              Etapa {step} de {totalSteps}
             </p>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="card-static p-6 space-y-4">
-          {isCompany && (
-            <>
-              <div className="p-3 rounded-lg bg-blue-50 text-blue-800 text-sm">
-                <Building2 className="h-4 w-4 inline mr-2" />
-                Preencha os dados da sua empresa
+        {/* Progress bar */}
+        <div className="flex gap-2">
+          {Array.from({ length: totalSteps }).map((_, i) => (
+            <div
+              key={i}
+              className={`h-2 flex-1 rounded-full transition-colors ${
+                i + 1 <= step ? 'bg-primary' : 'bg-muted'
+              }`}
+            />
+          ))}
+        </div>
+
+        {isCompany && (
+          <TipCard tipKey="completar-empresa" title="Importante">
+            Complete seu cadastro para solicitar entregas. O endereço será usado como padrão nas suas solicitações.
+          </TipCard>
+        )}
+
+        {isDriver && (
+          <TipCard tipKey="completar-entregador" title="Importante">
+            Cadastre seu veículo corretamente. Essas informações serão visíveis para as empresas.
+          </TipCard>
+        )}
+
+        <form onSubmit={handleSubmit} className="card-static p-6 space-y-6">
+          {/* Step 1: Identification */}
+          {step === 1 && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="flex items-center gap-2 text-lg font-semibold text-foreground mb-4">
+                <User className="h-5 w-5" />
+                <span>Identificação</span>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="company-name">Nome da Empresa *</Label>
-                <div className="relative">
-                  <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="company-name"
-                    type="text"
-                    placeholder="Nome da sua empresa"
-                    value={companyName}
-                    onChange={(e) => setCompanyName(e.target.value)}
-                    className="pl-10"
-                    required
-                    disabled={loading}
-                  />
-                </div>
-              </div>
+              {isCompany && (
+                <>
+                  <div className="p-3 rounded-lg bg-blue-50 text-blue-800 text-sm">
+                    <Building2 className="h-4 w-4 inline mr-2" />
+                    Preencha os dados da sua empresa
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="company-cnpj">CNPJ (opcional)</Label>
-                <div className="relative">
-                  <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="company-cnpj"
-                    type="text"
-                    placeholder="00.000.000/0000-00"
-                    value={companyCnpj}
-                    onChange={(e) => setCompanyCnpj(formatCnpj(e.target.value))}
-                    className="pl-10"
-                    disabled={loading}
-                    maxLength={18}
-                  />
-                </div>
-              </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="company-name">Nome da Empresa *</Label>
+                    <div className="relative">
+                      <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="company-name"
+                        type="text"
+                        placeholder="Nome da sua empresa"
+                        value={companyName}
+                        onChange={(e) => setCompanyName(e.target.value)}
+                        className="pl-10"
+                        required
+                        disabled={loading}
+                      />
+                    </div>
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="company-address">Endereço Padrão *</Label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="company-address"
-                    type="text"
-                    placeholder="Endereço completo para retiradas"
-                    value={companyAddress}
-                    onChange={(e) => setCompanyAddress(e.target.value)}
-                    className="pl-10"
-                    required
-                    disabled={loading}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">Será usado como endereço de retirada padrão</p>
-              </div>
-            </>
+                  <div className="space-y-2">
+                    <Label htmlFor="company-cnpj">CNPJ (opcional)</Label>
+                    <div className="relative">
+                      <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="company-cnpj"
+                        type="text"
+                        placeholder="00.000.000/0000-00"
+                        value={companyCnpj}
+                        onChange={(e) => setCompanyCnpj(formatCnpj(e.target.value))}
+                        className="pl-10"
+                        disabled={loading}
+                        maxLength={18}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {isDriver && (
+                <>
+                  <div className="p-3 rounded-lg bg-emerald-50 text-emerald-800 text-sm">
+                    <Truck className="h-4 w-4 inline mr-2" />
+                    Selecione o tipo de veículo
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Tipo de Veículo *</Label>
+                    <RadioGroup
+                      value={vehicleType}
+                      onValueChange={(v) => setVehicleType(v as VehicleType)}
+                      className="grid grid-cols-3 gap-3"
+                    >
+                      <div>
+                        <RadioGroupItem value="moto" id="vehicle-moto" className="peer sr-only" />
+                        <Label
+                          htmlFor="vehicle-moto"
+                          className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all"
+                        >
+                          <span className="text-3xl mb-2">🏍️</span>
+                          <span className="text-sm font-medium">Moto</span>
+                        </Label>
+                      </div>
+                      <div>
+                        <RadioGroupItem value="car" id="vehicle-car" className="peer sr-only" />
+                        <Label
+                          htmlFor="vehicle-car"
+                          className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all"
+                        >
+                          <span className="text-3xl mb-2">🚗</span>
+                          <span className="text-sm font-medium">Carro</span>
+                        </Label>
+                      </div>
+                      <div>
+                        <RadioGroupItem value="bike" id="vehicle-bike" className="peer sr-only" />
+                        <Label
+                          htmlFor="vehicle-bike"
+                          className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all"
+                        >
+                          <span className="text-3xl mb-2">🚲</span>
+                          <span className="text-sm font-medium">Bike</span>
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+                </>
+              )}
+
+              <Button 
+                type="button" 
+                className="w-full" 
+                size="lg" 
+                onClick={handleNextStep}
+              >
+                Continuar
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            </div>
           )}
 
-          {isDriver && (
-            <>
-              <div className="p-3 rounded-lg bg-emerald-50 text-emerald-800 text-sm">
-                <Truck className="h-4 w-4 inline mr-2" />
-                Preencha os dados do seu veículo
+          {/* Step 2: Details */}
+          {step === 2 && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="flex items-center gap-2 text-lg font-semibold text-foreground mb-4">
+                {isCompany ? <MapPin className="h-5 w-5" /> : <Car className="h-5 w-5" />}
+                <span>{isCompany ? 'Endereço' : 'Dados do Veículo'}</span>
               </div>
 
-              <div className="space-y-2">
-                <Label>Tipo de Veículo *</Label>
-                <RadioGroup
-                  value={vehicleType}
-                  onValueChange={(v) => setVehicleType(v as VehicleType)}
-                  className="grid grid-cols-3 gap-3"
-                >
-                  <div>
-                    <RadioGroupItem value="moto" id="vehicle-moto" className="peer sr-only" />
-                    <Label
-                      htmlFor="vehicle-moto"
-                      className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
-                    >
-                      <span className="text-2xl mb-1">🏍️</span>
-                      <span className="text-xs font-medium">Moto</span>
-                    </Label>
+              {isCompany && (
+                <>
+                  <div className="p-3 rounded-lg bg-blue-50 text-blue-800 text-sm">
+                    Informe o endereço padrão para retiradas
                   </div>
-                  <div>
-                    <RadioGroupItem value="car" id="vehicle-car" className="peer sr-only" />
-                    <Label
-                      htmlFor="vehicle-car"
-                      className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
-                    >
-                      <span className="text-2xl mb-1">🚗</span>
-                      <span className="text-xs font-medium">Carro</span>
-                    </Label>
-                  </div>
-                  <div>
-                    <RadioGroupItem value="bike" id="vehicle-bike" className="peer sr-only" />
-                    <Label
-                      htmlFor="vehicle-bike"
-                      className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
-                    >
-                      <span className="text-2xl mb-1">🚲</span>
-                      <span className="text-xs font-medium">Bike</span>
-                    </Label>
-                  </div>
-                </RadioGroup>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="vehicle-model">Modelo do Veículo *</Label>
-                <div className="relative">
-                  <Car className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="vehicle-model"
-                    type="text"
-                    placeholder="Ex: Honda CG 160"
-                    value={vehicleModel}
-                    onChange={(e) => setVehicleModel(e.target.value)}
-                    className="pl-10"
-                    required
-                    disabled={loading}
-                  />
-                </div>
-              </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="company-address">Endereço Padrão *</Label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="company-address"
+                        type="text"
+                        placeholder="Endereço completo para retiradas"
+                        value={companyAddress}
+                        onChange={(e) => setCompanyAddress(e.target.value)}
+                        className="pl-10"
+                        required
+                        disabled={loading}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Este endereço será preenchido automaticamente nas suas solicitações de entrega
+                    </p>
+                  </div>
+                </>
+              )}
 
-              <div className="space-y-2">
-                <Label htmlFor="vehicle-plate">Placa do Veículo *</Label>
-                <div className="relative">
-                  <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="vehicle-plate"
-                    type="text"
-                    placeholder="ABC-1234"
-                    value={vehiclePlate}
-                    onChange={(e) => setVehiclePlate(formatPlate(e.target.value))}
-                    className="pl-10"
-                    required
-                    disabled={loading}
-                    maxLength={8}
-                  />
-                </div>
-              </div>
-            </>
+              {isDriver && (
+                <>
+                  <div className="p-3 rounded-lg bg-emerald-50 text-emerald-800 text-sm">
+                    Informe os dados do seu veículo
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="vehicle-model">Modelo do Veículo *</Label>
+                    <div className="relative">
+                      <Car className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="vehicle-model"
+                        type="text"
+                        placeholder="Ex: Honda CG 160"
+                        value={vehicleModel}
+                        onChange={(e) => setVehicleModel(e.target.value)}
+                        className="pl-10"
+                        required
+                        disabled={loading}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="vehicle-plate">Placa do Veículo *</Label>
+                    <div className="relative">
+                      <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="vehicle-plate"
+                        type="text"
+                        placeholder="ABC-1234"
+                        value={vehiclePlate}
+                        onChange={(e) => setVehiclePlate(formatPlate(e.target.value))}
+                        className="pl-10"
+                        required
+                        disabled={loading}
+                        maxLength={8}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      A placa será visível para as empresas que você aceitar entregas
+                    </p>
+                  </div>
+                </>
+              )}
+
+              <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-4 w-4" />
+                    Finalizar Cadastro
+                  </>
+                )}
+              </Button>
+            </div>
           )}
-
-          <Button type="submit" className="w-full" size="lg" disabled={loading}>
-            {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Salvando...
-              </>
-            ) : (
-              <>
-                <CheckCircle2 className="h-4 w-4" />
-                Salvar Perfil
-              </>
-            )}
-          </Button>
         </form>
       </div>
     </AppLayout>
