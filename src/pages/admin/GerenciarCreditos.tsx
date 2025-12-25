@@ -1,7 +1,9 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { AppLayout } from '@/components/AppLayout';
+import { TipCard } from '@/components/TipCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useUsers, useAddCredits } from '@/hooks/useUsers';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -16,6 +18,7 @@ import {
   XCircle,
   Loader2,
   RefreshCw,
+  Clock,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -32,6 +35,7 @@ const GerenciarCreditos = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
+  const [customDays, setCustomDays] = useState<Record<string, number>>({});
   
   const { data: users, isLoading, refetch, isRefetching } = useUsers();
   const addCreditsMutation = useAddCredits();
@@ -45,22 +49,24 @@ const GerenciarCreditos = () => {
     )
   ) || [];
 
-  const handleAddCredit = async (userId: string, existingCredits: { validUntil: Date } | null) => {
+  const handleAddCredit = async (userId: string, existingCredits: { validUntil: Date } | null, days: number = 1) => {
     try {
       let newValidUntil: Date;
+      const hoursToAdd = days * 24;
       
       if (existingCredits && new Date(existingCredits.validUntil) > new Date()) {
-        // Add 24 hours to existing credits
+        // Add hours to existing credits
         newValidUntil = new Date(existingCredits.validUntil);
-        newValidUntil.setHours(newValidUntil.getHours() + 24);
+        newValidUntil.setHours(newValidUntil.getHours() + hoursToAdd);
       } else {
-        // Start from now + 24 hours
+        // Start from now + hours
         newValidUntil = new Date();
-        newValidUntil.setHours(newValidUntil.getHours() + 24);
+        newValidUntil.setHours(newValidUntil.getHours() + hoursToAdd);
       }
       
       await addCreditsMutation.mutateAsync({ userId, validUntil: newValidUntil });
-      toast.success('Crédito de +24h adicionado');
+      toast.success(`${days} ${days === 1 ? 'dia' : 'dias'} de crédito adicionado`);
+      setCustomDays(prev => ({ ...prev, [userId]: 1 }));
     } catch (error) {
       toast.error('Erro ao adicionar crédito');
     }
@@ -75,6 +81,8 @@ const GerenciarCreditos = () => {
     return new Date(userCredits.validUntil) > new Date();
   };
 
+  const getDaysValue = (userId: string) => customDays[userId] || 1;
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -86,7 +94,7 @@ const GerenciarCreditos = () => {
             </Button>
             <div>
               <h1 className="text-2xl font-semibold text-foreground">Gerenciar Créditos</h1>
-              <p className="text-muted-foreground">Adicionar créditos aos usuários</p>
+              <p className="text-muted-foreground">Adicionar créditos personalizados aos usuários</p>
             </div>
           </div>
           <Button 
@@ -100,11 +108,15 @@ const GerenciarCreditos = () => {
           </Button>
         </div>
 
+        <TipCard tipKey="admin-credits" title="Como funciona">
+          <p>1 crédito = 1 dia de acesso. Digite a quantidade de dias desejada e clique em adicionar. Os créditos são acumulativos.</p>
+        </TipCard>
+
         {/* Info */}
         <div className="card-static p-4 bg-blue-50 border-blue-200">
           <p className="text-sm text-blue-800">
-            <strong>Regra de créditos:</strong> Ao adicionar 1 crédito, o usuário ganha +24h de acesso. 
-            Se já tiver créditos válidos, as horas são somadas. Se estiver expirado, conta a partir de agora.
+            <strong>Controle de créditos:</strong> Digite quantos dias deseja adicionar. 
+            Se o usuário já tiver créditos válidos, os dias são somados. Se estiver expirado, conta a partir de agora.
           </p>
         </div>
 
@@ -142,6 +154,7 @@ const GerenciarCreditos = () => {
             const config = u.role ? roleConfig[u.role] : { label: 'Sem role', icon: User, className: 'bg-gray-100 text-gray-800' };
             const RoleIcon = config.icon;
             const isActive = hasValidCredits(u.credits);
+            const daysValue = getDaysValue(u.id);
 
             return (
               <div
@@ -175,17 +188,35 @@ const GerenciarCreditos = () => {
                       )}
                     </div>
                   </div>
-                  <Button 
-                    onClick={() => handleAddCredit(u.id, u.credits)}
-                    disabled={addCreditsMutation.isPending}
-                  >
-                    {addCreditsMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Plus className="h-4 w-4" />
-                    )}
-                    +24h
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="number"
+                        min={1}
+                        max={365}
+                        value={daysValue}
+                        onChange={(e) => setCustomDays(prev => ({ 
+                          ...prev, 
+                          [u.id]: Math.max(1, Math.min(365, parseInt(e.target.value) || 1)) 
+                        }))}
+                        className="w-16 h-9 text-center"
+                      />
+                      <span className="text-xs text-muted-foreground">dias</span>
+                    </div>
+                    <Button 
+                      onClick={() => handleAddCredit(u.id, u.credits, daysValue)}
+                      disabled={addCreditsMutation.isPending}
+                      size="sm"
+                    >
+                      {addCreditsMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Plus className="h-4 w-4" />
+                      )}
+                      Adicionar
+                    </Button>
+                  </div>
                 </div>
               </div>
             );
