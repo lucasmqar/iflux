@@ -17,7 +17,7 @@ import {
   MessageCircle,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { cn } from '@/lib/utils';
+import { cn, formatOrderCode } from '@/lib/utils';
 
 const SOS = () => {
   const { user } = useAuth();
@@ -48,7 +48,7 @@ const SOS = () => {
     setIsSending(true);
 
     const selectedOrder = activeOrders.find(o => o.id === selectedOrderId);
-    const orderCode = selectedOrder ? `#${selectedOrder.id.slice(0, 8)}` : '';
+    const orderCode = selectedOrder ? formatOrderCode(selectedOrder.id) : '';
 
     const message = encodeURIComponent(
       `🆘 *SOS - Problema na Entrega*\n\n` +
@@ -155,7 +155,7 @@ const SOS = () => {
                         </div>
                         <div className="min-w-0">
                           <p className="font-semibold text-foreground">
-                            Pedido #{order.id.slice(0, 8)}
+                            Pedido {formatOrderCode(order.id)}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {formatBrasiliaDateShort(new Date(order.created_at))} • 

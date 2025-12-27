@@ -22,7 +22,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { cn } from '@/lib/utils';
+import { cn, formatOrderCode } from '@/lib/utils';
 
 const statusFilters: { value: OrderStatus | 'all'; label: string }[] = [
   { value: 'all', label: 'Todos' },
@@ -177,9 +177,9 @@ const OrderCard = ({
 
   const handleWhatsApp = () => {
     if (userRole === 'company' && order.driver_user_id && driverUser?.phone) {
-      openWhatsApp(getDriverWhatsAppUrl(driverUser.phone, `#${order.id.slice(0, 8)}`));
+      openWhatsApp(getDriverWhatsAppUrl(driverUser.phone, formatOrderCode(order.id)));
     } else if (userRole === 'driver' && companyUser?.phone) {
-      openWhatsApp(getCompanyWhatsAppUrl(companyUser.phone, `#${order.id.slice(0, 8)}`));
+      openWhatsApp(getCompanyWhatsAppUrl(companyUser.phone, formatOrderCode(order.id)));
     }
   };
 
@@ -194,7 +194,7 @@ const OrderCard = ({
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <div className="flex items-center gap-3 flex-wrap">
           <span className="font-mono font-semibold text-foreground">
-            Pedido #{order.id.slice(0, 8)}
+            Pedido {formatOrderCode(order.id)}
           </span>
           <StatusBadge status={order.status} size="sm" />
         </div>

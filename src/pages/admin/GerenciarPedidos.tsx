@@ -18,7 +18,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { cn } from '@/lib/utils';
+import { cn, formatOrderCode } from '@/lib/utils';
 import type { OrderWithDeliveries } from '@/hooks/useOrders';
 
 const GerenciarPedidos = () => {
@@ -118,7 +118,7 @@ const GerenciarPedidos = () => {
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
                   <span className="font-mono font-semibold text-sm">
-                    #{order.id.slice(0, 8)}
+                    {formatOrderCode(order.id)}
                   </span>
                   <StatusBadge status={order.status} size="sm" />
                 </div>

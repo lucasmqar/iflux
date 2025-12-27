@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatBrasiliaDateShort } from '@/types';
+import { formatOrderCode } from '@/lib/utils';
 
 const PedidosAceitos = () => {
   const { user } = useAuth();
@@ -71,7 +72,7 @@ const PedidosAceitos = () => {
 
   const handleWhatsAppCompany = (companyPhone: string, orderId: string) => {
     if (companyPhone) {
-      const url = `https://wa.me/55${companyPhone.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá! Sou o entregador do pedido #${orderId.slice(0, 8)}`)}`;
+      const url = `https://wa.me/55${companyPhone.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá! Sou o entregador do pedido ${formatOrderCode(orderId)}`)}`;
       window.open(url, '_blank');
     }
   };
@@ -144,7 +145,7 @@ const OrderCard = ({
     <div className="card-static p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
-          <span className="font-mono font-semibold">Pedido #{order.id.slice(0, 8)}</span>
+          <span className="font-mono font-semibold">Pedido {formatOrderCode(order.id)}</span>
           <StatusBadge status={order.status} size="sm" />
         </div>
         <span className="text-sm text-muted-foreground">
