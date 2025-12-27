@@ -141,7 +141,10 @@ export const useCreateOrder = () => {
       deliveries 
     }: { 
       order: Omit<TablesInsert<'orders'>, 'id' | 'created_at' | 'updated_at'>; 
-      deliveries: Omit<TablesInsert<'order_deliveries'>, 'id' | 'order_id' | 'created_at' | 'code_hash' | 'validation_attempts'>[];
+      deliveries: (Omit<TablesInsert<'order_deliveries'>, 'id' | 'order_id' | 'created_at' | 'code_hash' | 'validation_attempts'> & {
+        customer_name?: string;
+        customer_phone?: string;
+      })[];
     }): Promise<CreateOrderResult> => {
       // Validate all deliveries before inserting
       deliveries.forEach(validateDelivery);
