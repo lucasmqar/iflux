@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,7 +10,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCreateCompanyProfile } from '@/hooks/useCompanyProfiles';
 import { useCreateDriverProfile, VehicleType } from '@/hooks/useDriverProfiles';
-import fluxLogo from '@/assets/flux-logo.png';
+import logoClaro from '@/assets/logo_tclaro.png';
+import logoEscuro from '@/assets/logo_tescuro.png';
 import { Loader2, Mail, Lock, User, Phone, AlertCircle, Building2, Truck, Car, Bike, MapPin, FileText } from 'lucide-react';
 import type { AppRole } from '@/contexts/AuthContext';
 
@@ -22,6 +24,7 @@ const GoogleIcon = () => (
 );
 
 const Auth = () => {
+  const { resolvedTheme } = useTheme();
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
   
   // Login state
@@ -231,7 +234,7 @@ const Auth = () => {
           {/* Logo and branding */}
           <div className="text-center mb-8 animate-fade-in">
             <div className="inline-flex items-center justify-center w-20 h-20 mb-4">
-              <img src={fluxLogo} alt="FLUX" className="w-full h-full object-contain" />
+              <img src={resolvedTheme === 'dark' ? logoEscuro : logoClaro} alt="FLUX" className="w-full h-full object-contain" />
             </div>
             <h1 className="font-brand text-4xl text-foreground mb-2">FLUX</h1>
             <p className="text-muted-foreground">Entregas Sob Demanda</p>
