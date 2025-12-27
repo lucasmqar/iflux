@@ -2,7 +2,9 @@ import { ReactNode, useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import fluxLogo from '@/assets/flux-logo.png';
+import { useTheme } from 'next-themes';
+import logoClaro from '@/assets/logo_tclaro.png';
+import logoEscuro from '@/assets/logo_tescuro.png';
 import { MarketingBanner } from '@/components/banners';
 import { getSupportWhatsAppUrl, openWhatsApp } from '@/lib/whatsapp';
 import { useRealtimeUpdates } from '@/hooks/useRealtimeUpdates';
@@ -35,7 +37,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const { user, signOut, hasCredits } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { resolvedTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Get the appropriate logo based on theme
+  const currentLogo = resolvedTheme === 'dark' ? logoEscuro : logoClaro;
 
   // Get notification settings from localStorage
   const [notificationSettings, setNotificationSettings] = useState({
@@ -177,7 +183,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           <div className="p-4 border-b border-border">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <img src={fluxLogo} alt="FLUX" className="w-10 h-10 object-contain" />
+                <img src={currentLogo} alt="FLUX" className="w-10 h-10 object-contain" />
                 <span className="font-brand text-xl text-foreground">FLUX</span>
               </div>
               <Button
@@ -308,7 +314,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 <Menu className="h-5 w-5" />
               </Button>
               <div className="flex items-center gap-2">
-                <img src={fluxLogo} alt="FLUX" className="w-7 h-7 object-contain" />
+                <img src={currentLogo} alt="FLUX" className="w-7 h-7 object-contain" />
                 <span className="font-brand text-base">FLUX</span>
               </div>
               <div className="flex items-center gap-1">

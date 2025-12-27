@@ -46,11 +46,11 @@ export const ClickableStatsCard = forwardRef<HTMLDivElement, ClickableStatsCardP
           </div>
           <div
             className={cn(
-              'p-3 rounded-xl bg-secondary',
+              'p-3 rounded-xl',
               iconClassName
             )}
           >
-            <Icon className="h-5 w-5 text-foreground" />
+            <Icon className="h-5 w-5 text-gray-800" />
           </div>
         </div>
         
