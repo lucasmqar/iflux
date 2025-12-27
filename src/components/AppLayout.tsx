@@ -1,10 +1,13 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import fluxLogo from '@/assets/flux-logo.png';
 import { MarketingBanner } from '@/components/banners';
 import { getSupportWhatsAppUrl, openWhatsApp } from '@/lib/whatsapp';
+import { useRealtimeUpdates } from '@/hooks/useRealtimeUpdates';
+import { useUserAlerts } from '@/hooks/useAdminAlerts';
+import { useNotifications } from '@/hooks/useNotifications';
 import {
   LayoutDashboard,
   Package,
@@ -23,7 +26,6 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { hasValidCredits, getUserAlerts, getUserNotifications } from '@/data/mockData';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -35,6 +37,28 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Get notification settings from localStorage
+  const [notificationSettings, setNotificationSettings] = useState({
+    showToasts: true,
+    soundEnabled: false,
+  });
+
+  useEffect(() => {
+    const popupEnabled = localStorage.getItem('flux_popup_notifications') !== 'false';
+    const soundEnabled = localStorage.getItem('flux_sound_notifications') !== 'false';
+    setNotificationSettings({
+      showToasts: popupEnabled,
+      soundEnabled: soundEnabled,
+    });
+  }, []);
+
+  // Enable realtime updates globally
+  useRealtimeUpdates(notificationSettings);
+
+  // Fetch alerts and notifications from database
+  const { data: alertsData = [] } = useUserAlerts(user?.id);
+  const { data: notificationsData = [] } = useNotifications(user?.id);
+
   if (!user) return null;
 
   const roleLabels = {
@@ -43,9 +67,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     driver: 'Entregador',
   };
 
-  const alerts = getUserAlerts(user.id);
-  const notifications = getUserNotifications(user.id);
-  const unreadNotifications = notifications.filter(n => !n.readAt).length;
+  const alerts = alertsData.filter((a: any) => a.active);
+  const unreadNotifications = notificationsData.filter((n: any) => !n.read_at).length;
 
   // Define navigation items based on role
   const getNavItems = () => {
