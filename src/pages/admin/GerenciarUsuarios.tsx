@@ -25,9 +25,9 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 const roleConfig = {
-  admin: { label: 'Admin', icon: User, className: 'bg-purple-100 text-purple-800' },
-  company: { label: 'Empresa', icon: Building2, className: 'bg-blue-100 text-blue-800' },
-  driver: { label: 'Entregador', icon: Truck, className: 'bg-emerald-100 text-emerald-800' },
+  admin: { label: 'Admin', icon: User, className: 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300' },
+  company: { label: 'Empresa', icon: Building2, className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' },
+  driver: { label: 'Entregador', icon: Truck, className: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' },
 };
 
 const GerenciarUsuarios = () => {

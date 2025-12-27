@@ -55,11 +55,11 @@ export const DeliveryCodeValidation = ({
 
   if (isValidated) {
     return (
-      <div className="flex items-center gap-3 p-4 rounded-lg bg-emerald-50 border border-emerald-200">
-        <CheckCircle2 className="h-6 w-6 text-emerald-600" />
+      <div className="flex items-center gap-3 p-4 rounded-lg bg-emerald-50 border border-emerald-200 dark:bg-emerald-900/30 dark:border-emerald-800">
+        <CheckCircle2 className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
         <div>
-          <p className="font-medium text-emerald-800">Entrega Validada</p>
-          <p className="text-sm text-emerald-600">Código verificado com sucesso</p>
+          <p className="font-medium text-emerald-800 dark:text-emerald-300">Entrega Validada</p>
+          <p className="text-sm text-emerald-600 dark:text-emerald-400">Código verificado com sucesso</p>
         </div>
       </div>
     );
@@ -90,7 +90,7 @@ export const DeliveryCodeValidation = ({
       </div>
 
       {remainingAttempts <= 2 && (
-        <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-2 rounded-lg">
+        <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-2 rounded-lg dark:bg-amber-900/30 dark:text-amber-400">
           <AlertTriangle className="h-4 w-4" />
           <span className="text-sm">
             Atenção: {remainingAttempts} tentativa{remainingAttempts !== 1 ? 's' : ''} restante{remainingAttempts !== 1 ? 's' : ''}

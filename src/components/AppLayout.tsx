@@ -149,8 +149,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
       {/* Admin alerts */}
       {alerts.length > 0 && (
-        <div className="bg-amber-100 border-b border-amber-200 px-4 py-3">
-          <div className="flex items-center gap-2 text-amber-800">
+        <div className="bg-amber-100 border-b border-amber-200 px-4 py-3 dark:bg-amber-900/40 dark:border-amber-800">
+          <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300">
             <AlertTriangle className="h-4 w-4 shrink-0" />
             <p className="text-sm font-medium">{alerts[0].message}</p>
           </div>

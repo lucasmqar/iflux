@@ -259,15 +259,15 @@ const PedidoDetalhes = () => {
 
         {/* Rating section for completed orders */}
         {isCompleted && (
-          <div className="card-static p-4 bg-gradient-to-r from-amber-50 to-amber-100 border-amber-200">
+          <div className="card-static p-4 bg-gradient-to-r from-amber-50 to-amber-100 border-amber-200 dark:from-amber-900/30 dark:to-amber-900/20 dark:border-amber-800">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Star className="h-6 w-6 text-amber-500" />
+                <Star className="h-6 w-6 text-amber-500 dark:text-amber-400" />
                 <div>
-                  <p className="font-medium text-amber-900">
+                  <p className="font-medium text-amber-900 dark:text-amber-300">
                     {existingRating ? 'Você já avaliou' : 'Avalie sua experiência'}
                   </p>
-                  <p className="text-sm text-amber-700">
+                  <p className="text-sm text-amber-700 dark:text-amber-400">
                     {existingRating 
                       ? `Você deu ${existingRating.stars} estrela${existingRating.stars > 1 ? 's' : ''}`
                       : `Como foi a entrega com ${toUserName}?`
@@ -358,16 +358,16 @@ const PedidoDetalhes = () => {
 
                       {/* Customer info for company */}
                       {user.role === 'company' && (delivery.customer_name || delivery.customer_phone) && (
-                        <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+                        <div className="p-3 rounded-lg bg-blue-50 border border-blue-200 dark:bg-blue-900/30 dark:border-blue-800">
                           <div className="flex items-center gap-2 text-sm">
-                            <User className="h-4 w-4 text-blue-600" />
-                            <span className="font-medium text-blue-900">
+                            <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                            <span className="font-medium text-blue-900 dark:text-blue-300">
                               {delivery.customer_name || 'Cliente'}
                             </span>
                             {delivery.customer_phone && (
                               <>
-                                <Phone className="h-4 w-4 text-blue-600 ml-2" />
-                                <span className="text-blue-700">{delivery.customer_phone}</span>
+                                <Phone className="h-4 w-4 text-blue-600 dark:text-blue-400 ml-2" />
+                                <span className="text-blue-700 dark:text-blue-400">{delivery.customer_phone}</span>
                               </>
                             )}
                           </div>
@@ -414,11 +414,11 @@ const PedidoDetalhes = () => {
 
         {/* Info about validation for drivers */}
         {user.role === 'driver' && order.status === 'accepted' && (
-          <div className="flex items-start gap-3 p-4 rounded-lg bg-blue-50 border border-blue-200">
-            <Shield className="h-6 w-6 text-blue-600 flex-shrink-0 mt-0.5" />
+          <div className="flex items-start gap-3 p-4 rounded-lg bg-blue-50 border border-blue-200 dark:bg-blue-900/30 dark:border-blue-800">
+            <Shield className="h-6 w-6 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="font-medium text-blue-800">Sistema Antifraude</p>
-              <p className="text-sm text-blue-700">
+              <p className="font-medium text-blue-800 dark:text-blue-300">Sistema Antifraude</p>
+              <p className="text-sm text-blue-700 dark:text-blue-400">
                 Para finalizar cada entrega, valide o código de 6 dígitos que o cliente recebeu. 
                 Você tem até 5 tentativas por entrega.
               </p>
