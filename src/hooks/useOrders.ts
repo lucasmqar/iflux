@@ -231,6 +231,25 @@ export const useUpdateOrderStatus = () => {
         .single();
       
       if (error) throw error;
+
+      // Send delivery codes via Twilio when order is accepted
+      if (status === 'accepted' && driverUserId) {
+        try {
+          console.log('Sending delivery codes via edge function...');
+          const { data: sendResult, error: sendError } = await supabase.functions.invoke('send-delivery-codes', {
+            body: { orderId, driverUserId }
+          });
+          
+          if (sendError) {
+            console.error('Error sending delivery codes:', sendError);
+          } else {
+            console.log('Delivery codes sent:', sendResult);
+          }
+        } catch (e) {
+          console.error('Failed to call send-delivery-codes function:', e);
+        }
+      }
+
       return data;
     },
     onSuccess: (data) => {
