@@ -143,7 +143,7 @@ const NovoPedido = () => {
     }
 
     try {
-      await createOrderMutation.mutateAsync({
+      const result = await createOrderMutation.mutateAsync({
         order: {
           company_user_id: user.id,
           total_value: totalValue,
@@ -159,7 +159,21 @@ const NovoPedido = () => {
       });
       
       toast.success('Pedido criado com sucesso!');
-      navigate('/dashboard');
+      
+      // Navigate to success page with codes
+      navigate('/pedido-criado', {
+        state: {
+          orderId: result.order.id,
+          deliveryCodes: result.deliveryCodes,
+          deliveries: deliveries.map((d, index) => ({
+            id: Object.keys(result.deliveryCodes)[index],
+            dropoffAddress: d.dropoffAddress,
+            packageType: d.packageType,
+            suggestedPrice: d.suggestedPrice,
+          })),
+          totalValue,
+        },
+      });
     } catch (error: any) {
       toast.error(error.message || 'Erro ao criar pedido');
     }

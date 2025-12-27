@@ -19,6 +19,7 @@ import Notificacoes from "./pages/Notificacoes";
 
 // Empresa pages
 import NovoPedido from "./pages/empresa/NovoPedido";
+import PedidoCriado from "./pages/empresa/PedidoCriado";
 import PedidosPendentes from "./pages/empresa/PedidosPendentes";
 import PedidosEmAndamento from "./pages/empresa/PedidosEmAndamento";
 import ConfirmacaoEntrega from "./pages/empresa/ConfirmacaoEntrega";
@@ -64,6 +65,7 @@ const App = () => (
 
             {/* Empresa routes */}
             <Route path="/novo-pedido" element={<NovoPedido />} />
+            <Route path="/pedido-criado" element={<PedidoCriado />} />
             <Route path="/pedidos-pendentes" element={<PedidosPendentes />} />
             <Route path="/pedidos-em-andamento" element={<PedidosEmAndamento />} />
             <Route path="/confirmacao-entrega" element={<ConfirmacaoEntrega />} />
