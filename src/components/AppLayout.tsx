@@ -77,6 +77,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         ...baseItems,
         { label: 'Disponíveis', icon: Truck, path: '/pedidos-disponiveis' },
         { label: 'Meus Pedidos', icon: Package, path: '/meus-pedidos' },
+        { label: 'SOS', icon: AlertTriangle, path: '/sos', isEmergency: true },
       ];
     }
 
@@ -193,9 +194,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
           {/* Navigation */}
           <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-            {navItems.map((item) => {
+            {navItems.map((item: any) => {
               const isActive = location.pathname === item.path;
               const disabled = isItemDisabled(item.path);
+              const isEmergency = item.isEmergency;
 
               return (
                 <button
@@ -203,13 +205,17 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                   onClick={() => handleNavClick(item.path)}
                   className={cn(
                     'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                    isActive
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-secondary',
+                    isEmergency
+                      ? isActive
+                        ? 'bg-red-600 text-white'
+                        : 'text-red-600 hover:text-red-700 hover:bg-red-50 border border-red-200'
+                      : isActive
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-secondary',
                     disabled && 'opacity-50'
                   )}
                 >
-                  <item.icon className="h-5 w-5" />
+                  <item.icon className={cn("h-5 w-5", isEmergency && !isActive && "text-red-600")} />
                   {item.label}
                   {disabled && (
                     <span className="ml-auto text-xs">🔒</span>

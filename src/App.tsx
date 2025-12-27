@@ -31,6 +31,7 @@ import PedidosDisponiveis from "./pages/entregador/PedidosDisponiveis";
 import PedidosAceitos from "./pages/entregador/PedidosAceitos";
 import PedidosFinalizados from "./pages/entregador/PedidosFinalizados";
 import EntregadorPedidosConcluidos from "./pages/entregador/PedidosConcluidos";
+import SOS from "./pages/entregador/SOS";
 
 // Admin pages
 import GerenciarUsuarios from "./pages/admin/GerenciarUsuarios";
@@ -78,6 +79,7 @@ const App = () => (
             <Route path="/pedidos-aceitos" element={<PedidosAceitos />} />
             <Route path="/pedidos-finalizados" element={<PedidosFinalizados />} />
             <Route path="/entregador/concluidos" element={<EntregadorPedidosConcluidos />} />
+            <Route path="/sos" element={<SOS />} />
 
             {/* Admin routes */}
             <Route path="/admin/usuarios" element={<GerenciarUsuarios />} />
