@@ -25,57 +25,6 @@ async function hashCode(code: string): Promise<string> {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// Send SMS via Twilio
-async function sendTwilioSMS(
-  to: string,
-  body: string
-): Promise<{ success: boolean; sid?: string; error?: string }> {
-  const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
-  const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
-  const fromNumber = Deno.env.get('TWILIO_PHONE_NUMBER');
-
-  if (!accountSid || !authToken || !fromNumber) {
-    console.error('Missing Twilio credentials');
-    return { success: false, error: 'Twilio credentials not configured' };
-  }
-
-  // Format phone number: ensure it has country code
-  const cleanPhone = to.replace(/\D/g, '');
-  const toFormatted = cleanPhone.startsWith('55') ? `+${cleanPhone}` : `+55${cleanPhone}`;
-
-  const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
-  const credentials = btoa(`${accountSid}:${authToken}`);
-
-  try {
-    console.log(`Sending SMS to ${toFormatted}`);
-    
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': `Basic ${credentials}`,
-      },
-      body: new URLSearchParams({
-        To: toFormatted,
-        From: fromNumber,
-        Body: body,
-      }),
-    });
-
-    const result = await response.json();
-    console.log('Twilio response:', JSON.stringify(result));
-
-    if (result.sid) {
-      return { success: true, sid: result.sid };
-    } else {
-      return { success: false, error: result.message || 'Unknown error' };
-    }
-  } catch (error) {
-    console.error('Error sending SMS:', error);
-    return { success: false, error: String(error) };
-  }
-}
-
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -116,7 +65,7 @@ serve(async (req) => {
       );
     }
 
-    // Get all deliveries for this order - now with direct customer_name and customer_phone
+    // Get all deliveries for this order
     const { data: deliveries, error: deliveriesError } = await supabase
       .from('order_deliveries')
       .select('*')
@@ -129,28 +78,17 @@ serve(async (req) => {
 
     console.log(`Found ${deliveries?.length || 0} deliveries`);
 
-    let sentCount = 0;
+    let generatedCount = 0;
     let failedCount = 0;
     const results: { deliveryId: string; success: boolean; error?: string }[] = [];
 
-    // Process each delivery
+    // Process each delivery - only generate codes, no SMS sending
     for (const delivery of deliveries || []) {
-      // Skip if code already sent
-      if (delivery.code_sent_at) {
-        console.log(`Delivery ${delivery.id} already has code sent, skipping`);
+      // Skip if code already generated
+      if (delivery.delivery_code) {
+        console.log(`Delivery ${delivery.id} already has code, skipping`);
         results.push({ deliveryId: delivery.id, success: true });
-        sentCount++;
-        continue;
-      }
-
-      // Get customer phone - directly from delivery or from linked customer
-      const customerPhone = delivery.customer_phone;
-      const customerName = delivery.customer_name || 'Cliente';
-
-      if (!customerPhone) {
-        console.log(`Delivery ${delivery.id} has no customer phone, skipping SMS`);
-        results.push({ deliveryId: delivery.id, success: false, error: 'No phone number' });
-        failedCount++;
+        generatedCount++;
         continue;
       }
 
@@ -163,8 +101,8 @@ serve(async (req) => {
         .from('order_deliveries')
         .update({
           code_hash: codeHash,
-          code_sent_at: new Date().toISOString(),
-          delivery_code: code, // Store original code for company to see
+          delivery_code: code,
+          // Note: code_sent_at will be set by the company when they send via WhatsApp
         })
         .eq('id', delivery.id);
 
@@ -175,38 +113,20 @@ serve(async (req) => {
         continue;
       }
 
-      // Send SMS
-      const message = `🔐 FLUX - Código de Entrega
-
-Olá ${customerName}! Seu pedido está a caminho.
-
-Código de validação: ${code}
-
-⚠️ Informe este código APENAS ao entregador no momento da entrega.
-
-Não compartilhe com ninguém!`;
-
-      const smsResult = await sendTwilioSMS(customerPhone, message);
-
-      if (smsResult.success) {
-        console.log(`SMS sent successfully to ${customerPhone}, SID: ${smsResult.sid}`);
-        sentCount++;
-        results.push({ deliveryId: delivery.id, success: true });
-      } else {
-        console.error(`Failed to send SMS to ${customerPhone}:`, smsResult.error);
-        failedCount++;
-        results.push({ deliveryId: delivery.id, success: false, error: smsResult.error });
-      }
+      console.log(`Code generated for delivery ${delivery.id}`);
+      generatedCount++;
+      results.push({ deliveryId: delivery.id, success: true });
     }
 
-    console.log(`Completed: ${sentCount} sent, ${failedCount} failed`);
+    console.log(`Completed: ${generatedCount} codes generated, ${failedCount} failed`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        sent: sentCount,
+        generated: generatedCount,
         failed: failedCount,
         results,
+        message: 'Códigos gerados. A empresa deve enviar os códigos aos clientes via WhatsApp.',
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

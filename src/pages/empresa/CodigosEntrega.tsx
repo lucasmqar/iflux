@@ -155,6 +155,7 @@ const CodigosEntrega = () => {
                             <DeliveryCodeDisplay
                               code={delivery.delivery_code}
                               deliveryIndex={index}
+                              orderId={order.id}
                               customerPhone={delivery.customer_phone}
                               customerName={delivery.customer_name}
                               isValidated={!!delivery.validated_at}
