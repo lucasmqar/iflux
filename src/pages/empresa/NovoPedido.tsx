@@ -42,6 +42,8 @@ interface DeliveryItem {
   dropoffAddress: string;
   packageType: PackageType;
   suggestedPrice: number;
+  customPrice: string;
+  useCustomPrice: boolean;
   notes: string;
   customerName: string;
   customerPhone: string;
@@ -81,6 +83,8 @@ const NovoPedido = () => {
       dropoffAddress: '',
       packageType: 'bag',
       suggestedPrice: 0,
+      customPrice: '',
+      useCustomPrice: false,
       notes: '',
       customerName: '',
       customerPhone: '',
@@ -109,6 +113,8 @@ const NovoPedido = () => {
         dropoffAddress: '',
         packageType: 'bag',
         suggestedPrice: 0,
+        customPrice: '',
+        useCustomPrice: false,
         notes: '',
         customerName: '',
         customerPhone: '',
@@ -156,7 +162,14 @@ const NovoPedido = () => {
     return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
   };
 
-  const totalValue = deliveries.reduce((sum, d) => sum + d.suggestedPrice, 0);
+  const getDeliveryPrice = (d: DeliveryItem) => {
+    if (d.useCustomPrice && d.customPrice) {
+      return parseFloat(d.customPrice) || 0;
+    }
+    return d.suggestedPrice;
+  };
+
+  const totalValue = deliveries.reduce((sum, d) => sum + getDeliveryPrice(d), 0);
 
   const isValid = deliveries.every(d => 
     d.pickupAddress && 
@@ -188,7 +201,7 @@ const NovoPedido = () => {
           dropoff_address: d.dropoffAddress || 'A definir',
           package_type: d.packageType,
           notes: d.notes || null,
-          suggested_price: d.suggestedPrice,
+          suggested_price: getDeliveryPrice(d),
           customer_name: d.customerName,
           customer_phone: d.customerPhone.replace(/\D/g, ''),
         })),
@@ -437,15 +450,21 @@ const NovoPedido = () => {
                       <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-3 block">
                         Valor da Entrega <span className="text-muted-foreground font-normal">(opcional)</span>
                       </Label>
-                      <div className="grid grid-cols-5 gap-2">
+                      <div className="grid grid-cols-6 gap-2">
                         {priceOptions.map((price) => (
                           <button
                             key={price}
                             type="button"
-                            onClick={() => updateDelivery(delivery.id, 'suggestedPrice', delivery.suggestedPrice === price ? 0 : price)}
+                            onClick={() => {
+                              setDeliveries(deliveries.map(d => 
+                                d.id === delivery.id 
+                                  ? { ...d, suggestedPrice: d.suggestedPrice === price ? 0 : price, useCustomPrice: false, customPrice: '' }
+                                  : d
+                              ));
+                            }}
                             className={cn(
                               "py-3 rounded-lg border-2 font-bold transition-all",
-                              delivery.suggestedPrice === price
+                              !delivery.useCustomPrice && delivery.suggestedPrice === price
                                 ? "border-primary bg-primary/10 text-primary"
                                 : "border-border text-muted-foreground hover:border-muted-foreground hover:bg-secondary/50"
                             )}
@@ -453,7 +472,38 @@ const NovoPedido = () => {
                             R$ {price}
                           </button>
                         ))}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDeliveries(deliveries.map(d => 
+                              d.id === delivery.id 
+                                ? { ...d, useCustomPrice: true, suggestedPrice: 0 }
+                                : d
+                            ));
+                          }}
+                          className={cn(
+                            "py-3 rounded-lg border-2 font-bold transition-all",
+                            delivery.useCustomPrice
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border text-muted-foreground hover:border-muted-foreground hover:bg-secondary/50"
+                          )}
+                        >
+                          Outro
+                        </button>
                       </div>
+                      {delivery.useCustomPrice && (
+                        <div className="mt-3">
+                          <Input
+                            type="number"
+                            placeholder="Digite o valor"
+                            value={delivery.customPrice}
+                            onChange={(e) => updateDelivery(delivery.id, 'customPrice', e.target.value)}
+                            className="text-sm"
+                            min="0"
+                            step="0.01"
+                          />
+                        </div>
+                      )}
                     </div>
 
                     {/* Notes */}
