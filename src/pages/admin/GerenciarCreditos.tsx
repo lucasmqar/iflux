@@ -85,16 +85,16 @@ const GerenciarCreditos = () => {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 px-1">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}>
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-4 min-w-0">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} className="shrink-0">
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <div>
-              <h1 className="text-2xl font-semibold text-foreground">Gerenciar Créditos</h1>
-              <p className="text-muted-foreground">Adicionar créditos personalizados aos usuários</p>
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-semibold text-foreground truncate">Gerenciar Créditos</h1>
+              <p className="text-sm text-muted-foreground truncate">Adicionar créditos personalizados</p>
             </div>
           </div>
           <Button 
@@ -102,9 +102,10 @@ const GerenciarCreditos = () => {
             size="sm" 
             onClick={() => refetch()}
             disabled={isRefetching}
+            className="shrink-0"
           >
             <RefreshCw className={cn("h-4 w-4", isRefetching && "animate-spin")} />
-            Atualizar
+            <span className="hidden sm:inline">Atualizar</span>
           </Button>
         </div>
 
@@ -113,8 +114,8 @@ const GerenciarCreditos = () => {
         </TipCard>
 
         {/* Info */}
-        <div className="card-static p-4 bg-blue-50 border-blue-200">
-          <p className="text-sm text-blue-800">
+        <div className="card-static p-4 bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
+          <p className="text-sm text-blue-800 dark:text-blue-300">
             <strong>Controle de créditos:</strong> Digite quantos dias deseja adicionar. 
             Se o usuário já tiver créditos válidos, os dias são somados. Se estiver expirado, conta a partir de agora.
           </p>
@@ -151,7 +152,7 @@ const GerenciarCreditos = () => {
         {/* Users list */}
         <div className="space-y-3">
           {filteredUsers.map((u, index) => {
-            const config = u.role ? roleConfig[u.role] : { label: 'Sem role', icon: User, className: 'bg-gray-100 text-gray-800' };
+            const config = u.role ? roleConfig[u.role] : { label: 'Sem role', icon: User, className: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300' };
             const RoleIcon = config.icon;
             const isActive = hasValidCredits(u.credits);
             const daysValue = getDaysValue(u.id);
@@ -159,38 +160,43 @@ const GerenciarCreditos = () => {
             return (
               <div
                 key={u.id}
-                className="card-static p-4 opacity-0 animate-fade-in"
+                className="card-static p-4 opacity-0 animate-fade-in overflow-hidden"
                 style={{ animationDelay: `${index * 30}ms` }}
               >
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center">
-                    <RoleIcon className="h-6 w-6 text-muted-foreground" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="font-semibold text-foreground truncate">{u.name}</p>
-                      <span className={cn('text-xs px-2 py-0.5 rounded-full font-medium', config.className)}>
-                        {config.label}
-                      </span>
+                <div className="flex flex-col gap-3">
+                  {/* User info row */}
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-secondary flex items-center justify-center shrink-0">
+                      <RoleIcon className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground" />
                     </div>
-                    <p className="text-sm text-muted-foreground">{u.email}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      {isActive ? (
-                        <span className="text-xs text-emerald-600 flex items-center gap-1">
-                          <CheckCircle2 className="h-3 w-3" />
-                          Ativo até {u.credits ? formatDate(u.credits.validUntil) : ''}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1">
+                        <p className="font-semibold text-foreground truncate max-w-[180px] sm:max-w-none">{u.name}</p>
+                        <span className={cn('text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap', config.className)}>
+                          {config.label}
                         </span>
-                      ) : (
-                        <span className="text-xs text-red-600 flex items-center gap-1">
-                          <XCircle className="h-3 w-3" />
-                          {u.credits ? 'Expirado' : 'Sem créditos'}
-                        </span>
-                      )}
+                      </div>
+                      <p className="text-sm text-muted-foreground truncate">{u.email}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        {isActive ? (
+                          <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                            <CheckCircle2 className="h-3 w-3 shrink-0" />
+                            <span className="truncate">Ativo até {u.credits ? formatDate(u.credits.validUntil) : ''}</span>
+                          </span>
+                        ) : (
+                          <span className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
+                            <XCircle className="h-3 w-3 shrink-0" />
+                            <span className="truncate">{u.credits ? 'Expirado' : 'Sem créditos'}</span>
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
+                  
+                  {/* Actions row */}
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
                       <Input
                         type="number"
                         min={1}
@@ -200,21 +206,22 @@ const GerenciarCreditos = () => {
                           ...prev, 
                           [u.id]: Math.max(1, Math.min(365, parseInt(e.target.value) || 1)) 
                         }))}
-                        className="w-16 h-9 text-center"
+                        className="w-14 sm:w-16 h-9 text-center"
                       />
-                      <span className="text-xs text-muted-foreground">dias</span>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">dias</span>
                     </div>
                     <Button 
                       onClick={() => handleAddCredit(u.id, u.credits, daysValue)}
                       disabled={addCreditsMutation.isPending}
                       size="sm"
+                      className="shrink-0"
                     >
                       {addCreditsMutation.isPending ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <Plus className="h-4 w-4" />
                       )}
-                      Adicionar
+                      <span className="hidden sm:inline">Adicionar</span>
                     </Button>
                   </div>
                 </div>

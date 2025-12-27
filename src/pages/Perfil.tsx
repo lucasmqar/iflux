@@ -182,13 +182,7 @@ const Perfil = () => {
         {/* Expired credit banner */}
         <ExpiredCreditBanner />
 
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-foreground">Meu Perfil</h1>
-          <Button variant="outline" size="sm" onClick={() => navigate('/configuracoes')}>
-            <Settings className="h-4 w-4" />
-            Configurações
-          </Button>
-        </div>
+        <h1 className="text-2xl font-bold text-foreground">Meu Perfil</h1>
 
         <TipCard tipKey="perfil-edit" title="Dica">
           Clique em "Editar" para atualizar suas informações. Mantenha seu WhatsApp atualizado para receber contatos.

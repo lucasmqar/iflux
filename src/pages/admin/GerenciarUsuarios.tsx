@@ -88,15 +88,15 @@ const GerenciarUsuarios = () => {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 px-1">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}>
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-4 min-w-0">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} className="shrink-0">
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <div>
-              <h1 className="text-2xl font-semibold text-foreground">Gerenciar Usuários</h1>
+            <div className="min-w-0">
+              <h1 className="text-2xl font-semibold text-foreground truncate">Gerenciar Usuários</h1>
               <p className="text-muted-foreground">{users?.length || 0} usuários</p>
             </div>
           </div>
@@ -105,6 +105,7 @@ const GerenciarUsuarios = () => {
             size="sm" 
             onClick={() => refetch()}
             disabled={isRefetching}
+            className="shrink-0"
           >
             <RefreshCw className={cn("h-4 w-4", isRefetching && "animate-spin")} />
             Atualizar
@@ -149,47 +150,49 @@ const GerenciarUsuarios = () => {
             return (
               <div
                 key={u.id}
-                className="card-static p-4 opacity-0 animate-fade-in"
+                className="card-static p-4 opacity-0 animate-fade-in overflow-hidden"
                 style={{ animationDelay: `${index * 30}ms` }}
               >
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center">
-                    <RoleIcon className="h-6 w-6 text-muted-foreground" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="font-semibold text-foreground truncate">{u.name}</p>
-                      <span className={cn('text-xs px-2 py-0.5 rounded-full font-medium', config.className)}>
-                        {config.label}
-                      </span>
-                      {u.isBanned && (
-                        <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-red-100 text-red-800">
-                          Banido
-                        </span>
-                      )}
+                <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
+                  <div className="flex items-start gap-3 sm:gap-4 min-w-0 flex-1">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-secondary flex items-center justify-center shrink-0">
+                      <RoleIcon className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground" />
                     </div>
-                    <p className="text-sm text-muted-foreground">{u.email}</p>
-                    {u.phone && <p className="text-sm text-muted-foreground">{u.phone}</p>}
-                    <div className="flex items-center gap-2 mt-2">
-                      {u.role === 'admin' ? (
-                        <span className="text-xs text-purple-600 flex items-center gap-1">
-                          <CheckCircle2 className="h-3 w-3" />
-                          Acesso ilimitado
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1">
+                        <p className="font-semibold text-foreground truncate max-w-[150px] sm:max-w-none">{u.name}</p>
+                        <span className={cn('text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap', config.className)}>
+                          {config.label}
                         </span>
-                      ) : isActive ? (
-                        <span className="text-xs text-emerald-600 flex items-center gap-1">
-                          <CheckCircle2 className="h-3 w-3" />
-                          Ativo até {u.credits ? formatDate(u.credits.validUntil) : ''}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-red-600 flex items-center gap-1">
-                          <XCircle className="h-3 w-3" />
-                          {u.credits ? 'Expirado' : 'Sem créditos'}
-                        </span>
-                      )}
+                        {u.isBanned && (
+                          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-red-100 text-red-800 whitespace-nowrap">
+                            Banido
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground truncate">{u.email}</p>
+                      {u.phone && <p className="text-sm text-muted-foreground truncate">{u.phone}</p>}
+                      <div className="flex items-center gap-2 mt-2">
+                        {u.role === 'admin' ? (
+                          <span className="text-xs text-purple-600 flex items-center gap-1">
+                            <CheckCircle2 className="h-3 w-3 shrink-0" />
+                            <span className="truncate">Acesso ilimitado</span>
+                          </span>
+                        ) : isActive ? (
+                          <span className="text-xs text-emerald-600 flex items-center gap-1">
+                            <CheckCircle2 className="h-3 w-3 shrink-0" />
+                            <span className="truncate">Ativo até {u.credits ? formatDate(u.credits.validUntil) : ''}</span>
+                          </span>
+                        ) : (
+                          <span className="text-xs text-red-600 flex items-center gap-1">
+                            <XCircle className="h-3 w-3 shrink-0" />
+                            <span className="truncate">{u.credits ? 'Expirado' : 'Sem créditos'}</span>
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 self-end sm:self-start shrink-0">
                     {u.role !== 'admin' && (
                       <>
                         <Button 
