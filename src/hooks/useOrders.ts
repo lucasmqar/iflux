@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables, TablesInsert, Enums } from '@/integrations/supabase/types';
+import { generateDeliveryCode, hashDeliveryCode } from '@/hooks/useDeliveryValidation';
 
 export type Order = Tables<'orders'>;
 export type OrderDelivery = Tables<'order_deliveries'>;
@@ -125,6 +126,12 @@ const validateDelivery = (delivery: Omit<TablesInsert<'order_deliveries'>, 'id' 
   }
 };
 
+// Result type for order creation with codes
+export interface CreateOrderResult {
+  order: Order;
+  deliveryCodes: { [deliveryId: string]: string }; // Plain text codes for display
+}
+
 export const useCreateOrder = () => {
   const queryClient = useQueryClient();
   
@@ -134,14 +141,22 @@ export const useCreateOrder = () => {
       deliveries 
     }: { 
       order: Omit<TablesInsert<'orders'>, 'id' | 'created_at' | 'updated_at'>; 
-      deliveries: Omit<TablesInsert<'order_deliveries'>, 'id' | 'order_id' | 'created_at'>[];
-    }) => {
+      deliveries: Omit<TablesInsert<'order_deliveries'>, 'id' | 'order_id' | 'created_at' | 'code_hash' | 'validation_attempts'>[];
+    }): Promise<CreateOrderResult> => {
       // Validate all deliveries before inserting
       deliveries.forEach(validateDelivery);
       
       // Validate total value
       if (order.total_value < MIN_PRICE || order.total_value > MAX_TOTAL_VALUE) {
         throw new Error(`Valor total inválido (deve ser entre R$${MIN_PRICE} e R$${MAX_TOTAL_VALUE})`);
+      }
+      
+      // Generate codes for each delivery
+      const deliveryCodesPlainText: { code: string; hash: string }[] = [];
+      for (const _ of deliveries) {
+        const code = generateDeliveryCode();
+        const hash = await hashDeliveryCode(code);
+        deliveryCodesPlainText.push({ code, hash });
       }
       
       // Create order
@@ -153,19 +168,28 @@ export const useCreateOrder = () => {
       
       if (orderError) throw orderError;
       
-      // Create deliveries
-      const deliveriesWithOrderId = deliveries.map(d => ({
+      // Create deliveries with code hashes
+      const deliveriesWithOrderId = deliveries.map((d, index) => ({
         ...d,
         order_id: orderData.id,
+        code_hash: deliveryCodesPlainText[index].hash,
+        validation_attempts: 0,
       }));
       
-      const { error: deliveriesError } = await supabase
+      const { data: insertedDeliveries, error: deliveriesError } = await supabase
         .from('order_deliveries')
-        .insert(deliveriesWithOrderId);
+        .insert(deliveriesWithOrderId)
+        .select();
       
       if (deliveriesError) throw deliveriesError;
       
-      return orderData;
+      // Build the code map (deliveryId -> plaintext code)
+      const deliveryCodes: { [deliveryId: string]: string } = {};
+      insertedDeliveries.forEach((delivery, index) => {
+        deliveryCodes[delivery.id] = deliveryCodesPlainText[index].code;
+      });
+      
+      return { order: orderData, deliveryCodes };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });

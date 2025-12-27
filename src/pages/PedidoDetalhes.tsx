@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AppLayout } from '@/components/AppLayout';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -9,6 +9,7 @@ import { useDriverProfile } from '@/hooks/useDriverProfiles';
 import { useCompanyProfile } from '@/hooks/useCompanyProfiles';
 import { useOrderRating } from '@/hooks/useOrderRating';
 import { RatingModal } from '@/components/RatingModal';
+import { DeliveryCodeValidation } from '@/components/DeliveryCodeValidation';
 import { formatBrasiliaDateShort, PACKAGE_TYPE_LABELS } from '@/types';
 import { toast } from 'sonner';
 import { 
@@ -22,6 +23,8 @@ import {
   ChevronUp,
   Loader2,
   Star,
+  Shield,
+  AlertTriangle,
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -284,63 +287,110 @@ const PedidoDetalhes = () => {
             Entregas ({order.order_deliveries?.length || 0})
           </h2>
           
-          {order.order_deliveries?.map((delivery: any, index: number) => (
-            <Collapsible 
-              key={delivery.id} 
-              open={openDeliveries.includes(String(index))}
-              onOpenChange={() => toggleDelivery(String(index))}
-            >
-              <div className="card-static overflow-hidden">
-                <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-secondary/30 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-semibold text-primary">
-                      {index + 1}
+          {order.order_deliveries?.map((delivery: any, index: number) => {
+            const isValidated = !!delivery.validated_at;
+            const validationAttempts = delivery.validation_attempts || 0;
+            
+            return (
+              <Collapsible 
+                key={delivery.id} 
+                open={openDeliveries.includes(String(index))}
+                onOpenChange={() => toggleDelivery(String(index))}
+              >
+                <div className="card-static overflow-hidden">
+                  <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-secondary/30 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-semibold text-primary">
+                        {index + 1}
+                      </div>
+                      <div className="text-left">
+                        <p className="font-medium text-foreground">
+                          {PACKAGE_TYPE_LABELS[delivery.package_type as keyof typeof PACKAGE_TYPE_LABELS]}
+                        </p>
+                        <p className="text-sm text-muted-foreground">R$ {delivery.suggested_price.toFixed(2)}</p>
+                      </div>
+                      {/* Validation status badge */}
+                      {order.status !== 'pending' && (
+                        <div className={`ml-2 px-2 py-0.5 rounded-full text-xs font-medium ${
+                          isValidated 
+                            ? 'bg-emerald-100 text-emerald-700' 
+                            : 'bg-amber-100 text-amber-700'
+                        }`}>
+                          {isValidated ? 'Validado' : 'Pendente'}
+                        </div>
+                      )}
                     </div>
-                    <div className="text-left">
-                      <p className="font-medium text-foreground">
-                        {PACKAGE_TYPE_LABELS[delivery.package_type as keyof typeof PACKAGE_TYPE_LABELS]}
-                      </p>
-                      <p className="text-sm text-muted-foreground">R$ {delivery.suggested_price.toFixed(2)}</p>
-                    </div>
-                  </div>
-                  {openDeliveries.includes(String(index)) ? (
-                    <ChevronUp className="h-5 w-5 text-muted-foreground" />
-                  ) : (
-                    <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                  )}
-                </CollapsibleTrigger>
-                
-                <CollapsibleContent>
-                  <div className="px-4 pb-4 space-y-3 border-t border-border pt-3">
-                    <div className="flex items-start gap-3">
-                      <div className="mt-1">
-                        <div className="w-3 h-3 rounded-full bg-amber-500" />
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Retirada</p>
-                        <p className="text-sm text-foreground">{delivery.pickup_address}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <div className="mt-1">
-                        <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Entrega</p>
-                        <p className="text-sm text-foreground">{delivery.dropoff_address}</p>
-                      </div>
-                    </div>
-                    {delivery.notes && (
-                      <div className="p-3 rounded-lg bg-secondary/50 text-sm text-muted-foreground">
-                        <strong>Obs:</strong> {delivery.notes}
-                      </div>
+                    {openDeliveries.includes(String(index)) ? (
+                      <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="h-5 w-5 text-muted-foreground" />
                     )}
-                  </div>
-                </CollapsibleContent>
-              </div>
-            </Collapsible>
-          ))}
+                  </CollapsibleTrigger>
+                  
+                  <CollapsibleContent>
+                    <div className="px-4 pb-4 space-y-3 border-t border-border pt-3">
+                      <div className="flex items-start gap-3">
+                        <div className="mt-1">
+                          <div className="w-3 h-3 rounded-full bg-amber-500" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Retirada</p>
+                          <p className="text-sm text-foreground">{delivery.pickup_address}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="mt-1">
+                          <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Entrega</p>
+                          <p className="text-sm text-foreground">{delivery.dropoff_address}</p>
+                        </div>
+                      </div>
+                      {delivery.notes && (
+                        <div className="p-3 rounded-lg bg-secondary/50 text-sm text-muted-foreground">
+                          <strong>Obs:</strong> {delivery.notes}
+                        </div>
+                      )}
+                      
+                      {/* Driver: Show code validation */}
+                      {user.role === 'driver' && order.status === 'accepted' && delivery.code_hash && (
+                        <DeliveryCodeValidation
+                          deliveryId={delivery.id}
+                          driverUserId={user.id}
+                          isValidated={isValidated}
+                          validationAttempts={validationAttempts}
+                        />
+                      )}
+                      
+                      {/* Validation attempts info */}
+                      {validationAttempts > 0 && !isValidated && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <AlertTriangle className="h-4 w-4 text-amber-500" />
+                          {validationAttempts} tentativa{validationAttempts !== 1 ? 's' : ''} de validação
+                        </div>
+                      )}
+                    </div>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
+            );
+          })}
         </div>
+
+        {/* Info about validation for drivers */}
+        {user.role === 'driver' && order.status === 'accepted' && (
+          <div className="flex items-start gap-3 p-4 rounded-lg bg-blue-50 border border-blue-200">
+            <Shield className="h-6 w-6 text-blue-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-medium text-blue-800">Sistema Antifraude</p>
+              <p className="text-sm text-blue-700">
+                Para finalizar cada entrega, valide o código de 6 dígitos que o cliente recebeu. 
+                Você tem até 5 tentativas por entrega.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Actions */}
         <div className="space-y-3 pt-4">
