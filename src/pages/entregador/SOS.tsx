@@ -99,14 +99,14 @@ const SOS = () => {
         </div>
 
         {/* Info Card */}
-        <div className="p-4 rounded-xl bg-amber-50 border border-amber-200">
+        <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 dark:bg-amber-900/30 dark:border-amber-800">
           <div className="flex items-start gap-3">
-            <Phone className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+            <Phone className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
             <div>
-              <p className="text-sm font-medium text-amber-800">
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
                 Precisa de ajuda urgente?
               </p>
-              <p className="text-xs text-amber-700 mt-1">
+              <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
                 Preencha o formulário abaixo para reportar um problema com sua entrega. 
                 Nossa equipe de suporte irá atendê-lo o mais rápido possível via WhatsApp.
               </p>

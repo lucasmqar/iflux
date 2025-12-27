@@ -144,7 +144,7 @@ const OrderCard = ({
   };
 
   return (
-    <div className="card-static p-4 border-2 border-purple-200 bg-purple-50/50">
+    <div className="card-static p-4 border-2 border-purple-200 bg-purple-50/50 dark:border-purple-800 dark:bg-purple-900/20">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
           <span className="font-mono font-semibold">Pedido {formatOrderCode(order.id)}</span>
@@ -156,9 +156,9 @@ const OrderCard = ({
       </div>
       
       {profile && (
-        <div className="flex items-center gap-3 mb-3 p-3 rounded-lg bg-white">
-          <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-            <User className="h-5 w-5 text-purple-600" />
+        <div className="flex items-center gap-3 mb-3 p-3 rounded-lg bg-white dark:bg-background">
+          <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center">
+            <User className="h-5 w-5 text-purple-600 dark:text-purple-400" />
           </div>
           <div className="flex-1">
             <p className="font-medium text-foreground">{profile.name}</p>
@@ -181,7 +181,7 @@ const OrderCard = ({
         </div>
       )}
 
-      <p className="text-sm text-purple-700 mb-3">
+      <p className="text-sm text-purple-700 dark:text-purple-400 mb-3">
         O entregador finalizou a entrega. Confirme o recebimento para concluir.
       </p>
 

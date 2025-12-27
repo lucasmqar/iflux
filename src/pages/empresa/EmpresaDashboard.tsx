@@ -423,7 +423,7 @@ const AwaitingConfirmationCard = ({
   const { data: profile } = useProfile(order.driver_user_id);
 
   return (
-    <div className="card-static p-4 border-2 border-purple-200 bg-purple-50/50">
+    <div className="card-static p-4 border-2 border-purple-200 bg-purple-50/50 dark:border-purple-800 dark:bg-purple-900/20">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
           <span className="font-mono font-semibold">Pedido {formatOrderCode(order.id)}</span>
@@ -431,7 +431,7 @@ const AwaitingConfirmationCard = ({
         </div>
       </div>
       
-      <p className="text-sm text-purple-700 mb-3">
+      <p className="text-sm text-purple-700 dark:text-purple-400 mb-3">
         Entregador <strong>{profile?.name || 'Entregador'}</strong> finalizou. Confirme o recebimento.
       </p>
 
