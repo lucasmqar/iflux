@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { AppLayout } from '@/components/AppLayout';
@@ -13,15 +13,21 @@ import { toast } from 'sonner';
 import { 
   ArrowLeft,
   Plus,
-  Minus,
   Trash2,
-  Package,
-  MapPin,
-  FileText,
   Loader2,
   CheckCircle,
   ChevronDown,
   ChevronUp,
+  Mail,
+  ShoppingBag,
+  Package,
+  Box,
+  MoreHorizontal,
+  Zap,
+  Bike,
+  Car,
+  Phone,
+  User,
 } from 'lucide-react';
 import {
   Collapsible,
@@ -37,14 +43,32 @@ interface DeliveryItem {
   packageType: PackageType;
   suggestedPrice: number;
   notes: string;
+  customerName: string;
+  customerPhone: string;
+  vehicleType: 'moto' | 'car' | 'bike' | null;
 }
 
-const packageTypes: PackageType[] = ['envelope', 'bag', 'small_box', 'large_box', 'other'];
+const packageTypes: { type: PackageType; label: string; icon: React.ElementType }[] = [
+  { type: 'envelope', label: 'Envelope', icon: Mail },
+  { type: 'bag', label: 'Sacola', icon: ShoppingBag },
+  { type: 'small_box', label: 'Caixa Pequena', icon: Package },
+  { type: 'large_box', label: 'Caixa Grande', icon: Box },
+  { type: 'other', label: 'Outros', icon: MoreHorizontal },
+];
+
+const vehicleTypes = [
+  { type: 'moto' as const, label: 'Moto', icon: Zap },
+  { type: 'bike' as const, label: 'Bicicleta', icon: Bike },
+  { type: 'car' as const, label: 'Carro', icon: Car },
+];
+
+const priceOptions = [3, 6, 9, 12, 15];
 
 const NovoPedido = () => {
   const { user, hasCredits } = useAuth();
   const navigate = useNavigate();
   const [openItems, setOpenItems] = useState<string[]>(['1']);
+  const [useCustomPickup, setUseCustomPickup] = useState<Record<string, boolean>>({});
 
   // Fetch company profile for default address
   const { data: companyProfile } = useCompanyProfile(user?.id);
@@ -56,24 +80,27 @@ const NovoPedido = () => {
       pickupAddress: '',
       dropoffAddress: '',
       packageType: 'bag',
-      suggestedPrice: 9,
+      suggestedPrice: 0,
       notes: '',
+      customerName: '',
+      customerPhone: '',
+      vehicleType: null,
     },
   ]);
 
   // Set default pickup address when company profile loads
-  useState(() => {
+  useEffect(() => {
     if (companyProfile?.address_default && deliveries[0].pickupAddress === '') {
       setDeliveries(prev => prev.map((d, i) => 
-        i === 0 ? { ...d, pickupAddress: companyProfile.address_default || '' } : d
+        i === 0 && !useCustomPickup[d.id] ? { ...d, pickupAddress: companyProfile.address_default || '' } : d
       ));
     }
-  });
+  }, [companyProfile?.address_default]);
 
   if (!user || user.role !== 'company') return null;
 
   const addDelivery = () => {
-    const newId = String(deliveries.length + 1);
+    const newId = String(Date.now());
     setDeliveries([
       ...deliveries,
       {
@@ -81,8 +108,11 @@ const NovoPedido = () => {
         pickupAddress: companyProfile?.address_default || '',
         dropoffAddress: '',
         packageType: 'bag',
-        suggestedPrice: 9,
+        suggestedPrice: 0,
         notes: '',
+        customerName: '',
+        customerPhone: '',
+        vehicleType: null,
       },
     ]);
     setOpenItems([...openItems, newId]);
@@ -97,20 +127,10 @@ const NovoPedido = () => {
     setOpenItems(openItems.filter(i => i !== id));
   };
 
-  const updateDelivery = (id: string, field: keyof DeliveryItem, value: string | number) => {
+  const updateDelivery = (id: string, field: keyof DeliveryItem, value: string | number | null) => {
     setDeliveries(deliveries.map(d => 
       d.id === id ? { ...d, [field]: value } : d
     ));
-  };
-
-  const adjustPrice = (id: string, delta: number) => {
-    setDeliveries(deliveries.map(d => {
-      if (d.id === id) {
-        const newPrice = Math.max(3, d.suggestedPrice + delta);
-        return { ...d, suggestedPrice: newPrice };
-      }
-      return d;
-    }));
   };
 
   const toggleItem = (id: string) => {
@@ -119,16 +139,30 @@ const NovoPedido = () => {
     );
   };
 
-  // Auto-fill pickup address with company default
-  const fillDefaultAddress = (id: string) => {
-    if (companyProfile?.address_default) {
-      updateDelivery(id, 'pickupAddress', companyProfile.address_default);
-    }
+  const toggleCustomPickup = (id: string) => {
+    setUseCustomPickup(prev => {
+      const newState = { ...prev, [id]: !prev[id] };
+      if (!newState[id] && companyProfile?.address_default) {
+        updateDelivery(id, 'pickupAddress', companyProfile.address_default);
+      }
+      return newState;
+    });
+  };
+
+  const formatPhone = (value: string) => {
+    const numbers = value.replace(/\D/g, '').slice(0, 11);
+    if (numbers.length <= 2) return numbers;
+    if (numbers.length <= 7) return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
+    return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
   };
 
   const totalValue = deliveries.reduce((sum, d) => sum + d.suggestedPrice, 0);
 
-  const isValid = deliveries.every(d => d.pickupAddress && d.dropoffAddress);
+  const isValid = deliveries.every(d => 
+    d.pickupAddress && 
+    d.customerName.trim() && 
+    d.customerPhone.replace(/\D/g, '').length >= 10
+  );
 
   const handleSubmit = async () => {
     if (!hasCredits) {
@@ -138,7 +172,7 @@ const NovoPedido = () => {
     }
 
     if (!isValid) {
-      toast.error('Preencha todos os endereços');
+      toast.error('Preencha nome e telefone do cliente para todas as entregas');
       return;
     }
 
@@ -151,10 +185,12 @@ const NovoPedido = () => {
         },
         deliveries: deliveries.map(d => ({
           pickup_address: d.pickupAddress,
-          dropoff_address: d.dropoffAddress,
+          dropoff_address: d.dropoffAddress || 'A definir',
           package_type: d.packageType,
           notes: d.notes || null,
           suggested_price: d.suggestedPrice,
+          customer_name: d.customerName,
+          customer_phone: d.customerPhone.replace(/\D/g, ''),
         })),
       });
       
@@ -170,6 +206,8 @@ const NovoPedido = () => {
             dropoffAddress: d.dropoffAddress,
             packageType: d.packageType,
             suggestedPrice: d.suggestedPrice,
+            customerName: d.customerName,
+            customerPhone: d.customerPhone,
           })),
           totalValue,
         },
@@ -181,28 +219,32 @@ const NovoPedido = () => {
 
   return (
     <AppLayout>
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="max-w-3xl mx-auto px-0 sm:px-4">
         {/* Header */}
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-semibold text-foreground">Novo Pedido</h1>
-            <p className="text-muted-foreground">Adicione as entregas do pedido</p>
+        <button 
+          onClick={() => navigate('/dashboard')}
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4 transition-colors font-semibold"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          Voltar
+        </button>
+
+        {/* Title Card */}
+        <div className="card-static p-6 mb-6">
+          <h1 className="text-2xl font-bold text-foreground mb-1">Novo Pedido</h1>
+          <p className="text-muted-foreground text-sm mb-2">Adicione as entregas ao pedido</p>
+          <div className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-foreground">
+                {deliveries.length} entrega{deliveries.length > 1 ? 's' : ''} no pedido
+              </p>
+              <p className="text-xs text-blue-600">Valor total: R$ {totalValue.toFixed(2)}</p>
+            </div>
           </div>
         </div>
 
-        {/* Company default address info */}
-        {companyProfile?.address_default && (
-          <div className="p-3 rounded-lg bg-blue-50 text-blue-800 text-sm">
-            <MapPin className="h-4 w-4 inline mr-2" />
-            Endereço padrão: <strong>{companyProfile.address_default}</strong>
-          </div>
-        )}
-
         {/* Deliveries */}
-        <div className="space-y-3">
+        <form className="space-y-4">
           {deliveries.map((delivery, index) => (
             <Collapsible 
               key={delivery.id}
@@ -212,19 +254,24 @@ const NovoPedido = () => {
               <div className="card-static overflow-hidden">
                 <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-secondary/30 transition-colors">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-semibold text-primary">
+                    <div className={cn(
+                      "w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm",
+                      delivery.packageType ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
+                    )}>
                       {index + 1}
                     </div>
                     <div className="text-left">
-                      <p className="font-medium text-foreground">Entrega {index + 1}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {PACKAGE_TYPE_LABELS[delivery.packageType]} • R$ {delivery.suggestedPrice.toFixed(2)}
+                      <p className="font-semibold text-foreground">Entrega #{index + 1}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {delivery.packageType ? PACKAGE_TYPE_LABELS[delivery.packageType] : 'Tipo não selecionado'}
+                        {delivery.customerName && ` • ${delivery.customerName}`}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     {deliveries.length > 1 && (
                       <Button
+                        type="button"
                         variant="ghost"
                         size="icon-sm"
                         onClick={(e) => {
@@ -237,160 +284,226 @@ const NovoPedido = () => {
                       </Button>
                     )}
                     {openItems.includes(delivery.id) ? (
-                      <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                      <ChevronUp className="w-5 h-5 text-muted-foreground" />
                     ) : (
-                      <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                      <ChevronDown className="w-5 h-5 text-muted-foreground" />
                     )}
                   </div>
                 </CollapsibleTrigger>
 
                 <CollapsibleContent>
-                  <div className="px-4 pb-4 space-y-4 border-t border-border pt-4">
-                    {/* Pickup */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-amber-600" />
-                          Endereço de Retirada
-                        </Label>
-                        {companyProfile?.address_default && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => fillDefaultAddress(delivery.id)}
-                            className="text-xs"
-                          >
-                            Usar padrão
-                          </Button>
-                        )}
+                  <div className="p-6 pt-0 space-y-4 border-t border-border">
+                    {/* Customer Data - Highlighted Section */}
+                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <p className="text-xs font-bold text-blue-900 uppercase tracking-wide mb-3">
+                        Dados do Cliente Final
+                      </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-xs font-semibold text-foreground mb-1 flex items-center gap-1">
+                            <User className="h-3 w-3" />
+                            Nome do Cliente *
+                          </Label>
+                          <Input
+                            placeholder="Nome completo"
+                            value={delivery.customerName}
+                            onChange={(e) => updateDelivery(delivery.id, 'customerName', e.target.value)}
+                            className="text-sm"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs font-semibold text-foreground mb-1 flex items-center gap-1">
+                            <Phone className="h-3 w-3" />
+                            Telefone do Cliente *
+                          </Label>
+                          <Input
+                            placeholder="(64) 99999-9999"
+                            value={delivery.customerPhone}
+                            onChange={(e) => updateDelivery(delivery.id, 'customerPhone', formatPhone(e.target.value))}
+                            className="text-sm"
+                            required
+                          />
+                        </div>
                       </div>
-                      <Input
-                        placeholder="Endereço completo de retirada"
-                        value={delivery.pickupAddress}
-                        onChange={(e) => updateDelivery(delivery.id, 'pickupAddress', e.target.value)}
-                      />
+                      <p className="text-xs text-blue-700 mt-2">
+                        ℹ️ O código de validação será enviado automaticamente para este telefone
+                      </p>
                     </div>
 
-                    {/* Dropoff */}
-                    <div className="space-y-2">
-                      <Label className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-emerald-600" />
-                        Endereço de Entrega
+                    {/* Pickup Address */}
+                    <div>
+                      <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2 block">
+                        Endereço de Retirada
+                      </Label>
+                      {!useCustomPickup[delivery.id] && companyProfile?.address_default ? (
+                        <div className="space-y-2">
+                          <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            <p className="text-sm text-foreground font-semibold">{companyProfile.address_default}</p>
+                            <p className="text-xs text-blue-600 mt-1">Endereço padrão</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => toggleCustomPickup(delivery.id)}
+                            className="text-xs text-muted-foreground hover:text-foreground font-semibold"
+                          >
+                            ▸ Usar outro endereço
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <Input
+                            placeholder="Endereço de retirada"
+                            value={delivery.pickupAddress}
+                            onChange={(e) => updateDelivery(delivery.id, 'pickupAddress', e.target.value)}
+                          />
+                          {companyProfile?.address_default && (
+                            <button
+                              type="button"
+                              onClick={() => toggleCustomPickup(delivery.id)}
+                              className="text-xs text-muted-foreground hover:text-foreground font-semibold"
+                            >
+                              ▸ Usar endereço padrão
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Dropoff Address */}
+                    <div>
+                      <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2 block">
+                        Endereço de Entrega <span className="text-muted-foreground font-normal">(opcional)</span>
                       </Label>
                       <Input
-                        placeholder="Endereço completo de entrega"
+                        placeholder="Endereço de destino"
                         value={delivery.dropoffAddress}
                         onChange={(e) => updateDelivery(delivery.id, 'dropoffAddress', e.target.value)}
                       />
                     </div>
 
-                    {/* Package type */}
-                    <div className="space-y-2">
-                      <Label className="flex items-center gap-2">
-                        <Package className="h-4 w-4" />
-                        Tipo de Pacote
+                    {/* Package Type */}
+                    <div>
+                      <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-3 block">
+                        Tipo de Entrega *
                       </Label>
-                      <div className="flex flex-wrap gap-2">
-                        {packageTypes.map((type) => (
+                      <div className="grid grid-cols-5 gap-2">
+                        {packageTypes.map(({ type, label, icon: Icon }) => (
                           <button
                             key={type}
                             type="button"
                             onClick={() => updateDelivery(delivery.id, 'packageType', type)}
                             className={cn(
-                              'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+                              "flex flex-col items-center justify-center p-3 rounded-lg border-2 transition-all",
                               delivery.packageType === type
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-secondary text-muted-foreground hover:bg-secondary/80'
+                                ? "border-primary bg-primary/10 text-primary"
+                                : "border-border text-muted-foreground hover:border-muted-foreground hover:bg-secondary/50"
+                            )}
+                            title={label}
+                          >
+                            <Icon className="w-6 h-6 mb-1" />
+                            <span className="text-xs font-semibold">{label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Vehicle Type */}
+                    <div>
+                      <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-3 block">
+                        Tipo de Veículo <span className="text-muted-foreground font-normal">(opcional)</span>
+                      </Label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {vehicleTypes.map(({ type, label, icon: Icon }) => (
+                          <button
+                            key={type}
+                            type="button"
+                            onClick={() => updateDelivery(delivery.id, 'vehicleType', delivery.vehicleType === type ? null : type)}
+                            className={cn(
+                              "flex flex-col items-center justify-center p-3 rounded-lg border-2 transition-all",
+                              delivery.vehicleType === type
+                                ? "border-primary bg-primary/10 text-primary"
+                                : "border-border text-muted-foreground hover:border-muted-foreground hover:bg-secondary/50"
                             )}
                           >
-                            {PACKAGE_TYPE_LABELS[type]}
+                            <Icon className="w-6 h-6 mb-1" />
+                            <span className="text-xs font-semibold">{label}</span>
                           </button>
                         ))}
                       </div>
                     </div>
 
                     {/* Price */}
-                    <div className="space-y-2">
-                      <Label>Valor Sugerido</Label>
-                      <div className="flex items-center gap-3">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={() => adjustPrice(delivery.id, -3)}
-                          disabled={delivery.suggestedPrice <= 3}
-                        >
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                        <span className="text-2xl font-semibold text-foreground w-24 text-center">
-                          R$ {delivery.suggestedPrice.toFixed(2)}
-                        </span>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={() => adjustPrice(delivery.id, 3)}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <div className="flex gap-2 mt-2">
-                        {[3, 6, 9, 12, 15].map((price) => (
+                    <div>
+                      <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-3 block">
+                        Valor da Entrega <span className="text-muted-foreground font-normal">(opcional)</span>
+                      </Label>
+                      <div className="grid grid-cols-5 gap-2">
+                        {priceOptions.map((price) => (
                           <button
                             key={price}
                             type="button"
-                            onClick={() => updateDelivery(delivery.id, 'suggestedPrice', price)}
+                            onClick={() => updateDelivery(delivery.id, 'suggestedPrice', delivery.suggestedPrice === price ? 0 : price)}
                             className={cn(
-                              'px-3 py-1 rounded text-sm font-medium transition-colors',
+                              "py-3 rounded-lg border-2 font-bold transition-all",
                               delivery.suggestedPrice === price
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-secondary text-muted-foreground hover:bg-secondary/80'
+                                ? "border-primary bg-primary/10 text-primary"
+                                : "border-border text-muted-foreground hover:border-muted-foreground hover:bg-secondary/50"
                             )}
                           >
-                            R${price}
+                            R$ {price}
                           </button>
                         ))}
                       </div>
                     </div>
 
                     {/* Notes */}
-                    <div className="space-y-2">
-                      <Label className="flex items-center gap-2">
-                        <FileText className="h-4 w-4" />
-                        Observações (opcional)
+                    <div>
+                      <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2 block">
+                        Observações <span className="text-muted-foreground font-normal">(opcional)</span>
                       </Label>
                       <Textarea
-                        placeholder="Instruções especiais, horários, etc..."
+                        placeholder="Observações sobre esta entrega..."
                         value={delivery.notes}
                         onChange={(e) => updateDelivery(delivery.id, 'notes', e.target.value)}
                         rows={2}
                         maxLength={120}
+                        className="resize-none"
                       />
-                      <p className="text-xs text-muted-foreground">{delivery.notes.length}/120</p>
                     </div>
                   </div>
                 </CollapsibleContent>
               </div>
             </Collapsible>
           ))}
-        </div>
 
-        {/* Add delivery */}
-        <Button variant="outline" className="w-full" onClick={addDelivery}>
-          <Plus className="h-4 w-4" />
-          Adicionar Entrega
-        </Button>
+          {/* Add delivery button */}
+          <button
+            type="button"
+            onClick={addDelivery}
+            className="w-full py-4 px-6 border-2 border-dashed border-border rounded-xl text-muted-foreground hover:border-primary hover:text-primary transition-all font-semibold flex items-center justify-center gap-2"
+          >
+            <Plus className="w-5 h-5" />
+            Adicionar Entrega ao Pedido
+          </button>
 
-        {/* Summary */}
-        <div className="card-static p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">{deliveries.length} entrega{deliveries.length > 1 ? 's' : ''}</p>
-              <p className="text-2xl font-semibold text-foreground">R$ {totalValue.toFixed(2)}</p>
+          {/* Summary */}
+          <div className="card-static p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Total do Pedido</p>
+                <p className="text-3xl font-bold text-foreground">R$ {totalValue.toFixed(2)}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-muted-foreground">
+                  {deliveries.length} entrega{deliveries.length > 1 ? 's' : ''}
+                </p>
+              </div>
             </div>
             <Button
+              type="button"
               size="lg"
+              className="w-full text-lg font-bold"
               onClick={handleSubmit}
               disabled={createOrderMutation.isPending || !isValid || !hasCredits}
             >
@@ -400,14 +513,11 @@ const NovoPedido = () => {
                   Criando...
                 </>
               ) : (
-                <>
-                  <CheckCircle className="h-5 w-5" />
-                  Concluir Pedido
-                </>
+                'CONCLUIR PEDIDO'
               )}
             </Button>
           </div>
-        </div>
+        </form>
       </div>
     </AppLayout>
   );
