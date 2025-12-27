@@ -27,7 +27,7 @@ export const MarketingBanner = ({ collapsible = false }: MarketingBannerProps) =
   }
 
   return (
-    <div className="bg-[hsl(142_70%_45%)] text-white px-4 py-2.5 animate-fade-in">
+    <div className="bg-[hsl(142_70%_45%)] text-white dark:text-gray-900 px-4 py-2.5 animate-fade-in">
       <div className="max-w-screen-xl mx-auto flex items-center justify-between gap-3">
         <button
           onClick={handleClick}
@@ -41,7 +41,7 @@ export const MarketingBanner = ({ collapsible = false }: MarketingBannerProps) =
         {collapsible && (
           <button
             onClick={() => setCollapsed(true)}
-            className="p-1 hover:bg-white/20 rounded-md transition-colors"
+            className="p-1 hover:bg-black/10 dark:hover:bg-black/20 rounded-md transition-colors"
             aria-label="Minimizar"
           >
             <ChevronDown className="h-4 w-4" />
