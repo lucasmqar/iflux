@@ -13,6 +13,14 @@ import fluxLogo from '@/assets/flux-logo.png';
 import { Loader2, Mail, Lock, User, Phone, AlertCircle, Building2, Truck, Car, Bike, MapPin, FileText } from 'lucide-react';
 import type { AppRole } from '@/contexts/AuthContext';
 
+const GoogleIcon = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+    <g transform="matrix(1, 0, 0, 1, 0, 0)">
+      <path fill="#EA4335" d="M12.24 10.285V14.4h6.806c-.275 1.765-2.056 5.174-6.806 5.174-4.095 0-7.439-3.389-7.439-7.574s3.345-7.574 7.439-7.574c2.33 0 3.891.989 4.785 1.849l3.254-3.138C18.189 1.186 15.479 0 12.24 0c-6.635 0-12 5.365-12 12s5.365 12 12 12c6.926 0 11.52-4.869 11.52-11.726 0-.788-.085-1.39-.189-1.989H12.24z"/>
+    </g>
+  </svg>
+);
+
 const Auth = () => {
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
   
@@ -42,7 +50,8 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'basic' | 'details'>('basic');
   
-  const { signIn, signUp, isAuthenticated, isLoading } = useAuth();
+  const { signIn, signUp, signInWithGoogle, isAuthenticated, isLoading } = useAuth();
+  const [googleLoading, setGoogleLoading] = useState(false);
   const navigate = useNavigate();
   
   const createCompanyProfile = useCreateCompanyProfile();
@@ -69,6 +78,19 @@ const Auth = () => {
     }
 
     setLoading(false);
+  };
+
+  const handleGoogleLogin = async () => {
+    setError('');
+    setGoogleLoading(true);
+
+    const result = await signInWithGoogle();
+
+    if (!result.success) {
+      setError(result.error || 'Erro ao fazer login com Google');
+      setGoogleLoading(false);
+    }
+    // Se sucesso, o usuário será redirecionado pelo OAuth
   };
 
   const handleSignupBasic = async (e: React.FormEvent) => {
@@ -277,7 +299,7 @@ const Auth = () => {
                     </div>
                   </div>
 
-                  <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                  <Button type="submit" className="w-full" size="lg" disabled={loading || googleLoading}>
                     {loading ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -285,6 +307,38 @@ const Auth = () => {
                       </>
                     ) : (
                       'Entrar'
+                    )}
+                  </Button>
+
+                  {/* Separador */}
+                  <div className="relative my-6">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t border-border" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-card px-2 text-muted-foreground">ou continue com</span>
+                    </div>
+                  </div>
+
+                  {/* Botão Google */}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    size="lg"
+                    onClick={handleGoogleLogin}
+                    disabled={loading || googleLoading}
+                  >
+                    {googleLoading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Conectando...
+                      </>
+                    ) : (
+                      <>
+                        <GoogleIcon />
+                        <span className="ml-2">Continuar com Google</span>
+                      </>
                     )}
                   </Button>
                 </form>
