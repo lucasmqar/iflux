@@ -196,13 +196,12 @@ const NovoPedido = () => {
       
       toast.success('Pedido criado com sucesso!');
       
-      // Navigate to success page with codes
+      // Navigate to success page
       navigate('/pedido-criado', {
         state: {
           orderId: result.order.id,
-          deliveryCodes: result.deliveryCodes,
           deliveries: deliveries.map((d, index) => ({
-            id: Object.keys(result.deliveryCodes)[index],
+            id: `delivery-${index}`,
             dropoffAddress: d.dropoffAddress,
             packageType: d.packageType,
             suggestedPrice: d.suggestedPrice,

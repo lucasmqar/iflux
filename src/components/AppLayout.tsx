@@ -11,6 +11,8 @@ import {
   Users,
   CreditCard,
   User,
+  Settings,
+  KeyRound,
   LogOut,
   Menu,
   X,
@@ -66,6 +68,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         ...baseItems,
         { label: 'Novo Pedido', icon: Plus, path: '/novo-pedido' },
         { label: 'Meus Pedidos', icon: Package, path: '/meus-pedidos' },
+        { label: 'Códigos', icon: KeyRound, path: '/codigos-entrega' },
       ];
     }
 
@@ -87,6 +90,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     { label: 'Notificações', icon: Bell, path: '/notificacoes', badge: unreadNotifications },
     { label: 'Perfil', icon: User, path: '/perfil' },
     { label: 'Créditos', icon: CreditCard, path: '/creditos' },
+    { label: 'Configurações', icon: Settings, path: '/configuracoes' },
   ];
 
   const isItemDisabled = (path: string) => {

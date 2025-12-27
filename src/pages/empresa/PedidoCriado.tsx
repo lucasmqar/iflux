@@ -1,21 +1,18 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
-import { DeliveryCodeDisplay } from '@/components/DeliveryCodeDisplay';
 import { PACKAGE_TYPE_LABELS, PackageType } from '@/types';
 import { 
   CheckCircle2, 
   ArrowRight, 
-  Copy, 
-  Check,
-  AlertTriangle,
+  Clock,
+  User,
+  Phone,
+  Package,
 } from 'lucide-react';
-import { useState } from 'react';
-import { toast } from 'sonner';
 
 interface OrderSuccessState {
   orderId: string;
-  deliveryCodes: { [deliveryId: string]: string };
   deliveries: {
     id: string;
     dropoffAddress: string;
@@ -30,7 +27,6 @@ interface OrderSuccessState {
 const PedidoCriado = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [copiedAll, setCopiedAll] = useState(false);
   
   const state = location.state as OrderSuccessState | null;
 
@@ -39,26 +35,11 @@ const PedidoCriado = () => {
     return null;
   }
 
-  const { orderId, deliveryCodes, deliveries, totalValue } = state;
-
-  const handleCopyAllCodes = async () => {
-    const codes = deliveries.map((d, i) => 
-      `Entrega ${i + 1}${d.customerName ? ` (${d.customerName})` : ''}: ${deliveryCodes[d.id]}`
-    ).join('\n');
-    
-    try {
-      await navigator.clipboard.writeText(codes);
-      setCopiedAll(true);
-      toast.success('Todos os códigos copiados!');
-      setTimeout(() => setCopiedAll(false), 2000);
-    } catch {
-      toast.error('Erro ao copiar');
-    }
-  };
+  const { orderId, deliveries, totalValue } = state;
 
   return (
     <AppLayout>
-      <div className="max-w-2xl mx-auto space-y-6 px-0 sm:px-4">
+      <div className="max-w-2xl mx-auto space-y-6 px-0 sm:px-4 overflow-x-hidden">
         {/* Success Header */}
         <div className="text-center space-y-4 py-6">
           <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto">
@@ -72,64 +53,67 @@ const PedidoCriado = () => {
           </div>
         </div>
 
-        {/* Important Warning */}
-        <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-50 border border-amber-200">
-          <AlertTriangle className="h-6 w-6 text-amber-600 flex-shrink-0 mt-0.5" />
+        {/* Important Info */}
+        <div className="flex items-start gap-3 p-4 rounded-lg bg-blue-50 border border-blue-200">
+          <Clock className="h-6 w-6 text-blue-600 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-medium text-amber-800">Códigos Gerados!</p>
-            <p className="text-sm text-amber-700">
-              Os códigos de validação serão enviados automaticamente via SMS para os clientes 
-              quando o entregador aceitar o pedido. Você também pode enviá-los manualmente via WhatsApp.
+            <p className="font-medium text-blue-800">Aguardando Entregador</p>
+            <p className="text-sm text-blue-700">
+              Os códigos de validação serão gerados e enviados automaticamente via SMS para os clientes 
+              quando um entregador aceitar o pedido. Você poderá visualizá-los na página "Códigos" na barra lateral.
             </p>
           </div>
         </div>
 
-        {/* Copy All Button */}
-        <Button
-          variant="outline"
-          className="w-full"
-          onClick={handleCopyAllCodes}
-        >
-          {copiedAll ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
-          Copiar Todos os Códigos
-        </Button>
-
-        {/* Delivery Codes */}
+        {/* Deliveries Summary */}
         <div className="space-y-4">
           <h2 className="font-semibold text-lg text-foreground">
-            Códigos de Validação ({deliveries.length})
+            Entregas do Pedido ({deliveries.length})
           </h2>
           
           {deliveries.map((delivery, index) => (
-            <div key={delivery.id} className="card-static overflow-hidden">
-              <div className="p-4 border-b border-border bg-secondary/30">
-                <div className="flex items-center justify-between">
-                  <p className="font-medium text-foreground">
-                    Entrega {index + 1} - {PACKAGE_TYPE_LABELS[delivery.packageType]}
-                  </p>
-                  <span className="text-sm font-semibold text-foreground">
-                    R$ {delivery.suggestedPrice.toFixed(2)}
-                  </span>
+            <div key={delivery.id} className="card-static overflow-hidden p-4">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-semibold text-primary flex-shrink-0">
+                  {index + 1}
                 </div>
-                {delivery.customerName && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Cliente: {delivery.customerName}
-                    {delivery.customerPhone && ` • ${delivery.customerPhone}`}
-                  </p>
-                )}
-                {delivery.dropoffAddress && (
-                  <p className="text-sm text-muted-foreground truncate">
-                    {delivery.dropoffAddress}
-                  </p>
-                )}
-              </div>
-              <div className="p-4">
-                <DeliveryCodeDisplay
-                  code={deliveryCodes[delivery.id]}
-                  deliveryIndex={index}
-                  customerPhone={delivery.customerPhone?.replace(/\D/g, '')}
-                  customerName={delivery.customerName}
-                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-medium text-foreground">
+                      {PACKAGE_TYPE_LABELS[delivery.packageType]}
+                    </p>
+                    <span className="text-sm font-semibold text-foreground">
+                      R$ {delivery.suggestedPrice.toFixed(2)}
+                    </span>
+                  </div>
+                  
+                  {delivery.customerName && (
+                    <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+                      <User className="h-4 w-4" />
+                      <span>{delivery.customerName}</span>
+                    </div>
+                  )}
+                  
+                  {delivery.customerPhone && (
+                    <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+                      <Phone className="h-4 w-4" />
+                      <span>{delivery.customerPhone}</span>
+                    </div>
+                  )}
+                  
+                  {delivery.dropoffAddress && (
+                    <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+                      <Package className="h-4 w-4" />
+                      <span className="truncate">{delivery.dropoffAddress}</span>
+                    </div>
+                  )}
+                  
+                  <div className="mt-3 p-2 rounded bg-amber-50 border border-amber-200">
+                    <p className="text-xs text-amber-700 font-medium">
+                      ⏳ Código será gerado quando o entregador aceitar
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           ))}

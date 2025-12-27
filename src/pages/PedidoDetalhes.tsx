@@ -175,18 +175,18 @@ const PedidoDetalhes = () => {
     <AppLayout>
       <div className="max-w-3xl mx-auto space-y-6 px-0 sm:px-4 overflow-x-hidden">
         {/* Header */}
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+        <div className="flex items-start gap-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="mt-1">
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex-1">
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-semibold text-foreground">
-                Pedido #{order.id.slice(0, 8)}
-              </h1>
+            <h1 className="text-2xl font-semibold text-foreground">
+              Pedido #{order.id.slice(0, 8)}
+            </h1>
+            <p className="text-muted-foreground text-sm">{formatBrasiliaDateShort(new Date(order.created_at))}</p>
+            <div className="mt-2">
               <StatusBadge status={order.status} />
             </div>
-            <p className="text-muted-foreground">{formatBrasiliaDateShort(new Date(order.created_at))}</p>
           </div>
           <div className="text-right">
             <p className="text-sm text-muted-foreground">Valor Total</p>
@@ -373,10 +373,10 @@ const PedidoDetalhes = () => {
                         </div>
                       )}
 
-                      {/* Company: Show delivery code - ALWAYS VISIBLE */}
-                      {user.role === 'company' && delivery.code_hash && order.status !== 'pending' && (
+                      {/* Company: Show delivery code - ALWAYS VISIBLE after driver accepts */}
+                      {user.role === 'company' && order.status !== 'pending' && delivery.delivery_code && (
                         <DeliveryCodeDisplay
-                          code="------"
+                          code={delivery.delivery_code}
                           deliveryIndex={index}
                           customerPhone={delivery.customer_phone}
                           customerName={delivery.customer_name}
@@ -444,21 +444,34 @@ const PedidoDetalhes = () => {
             </Button>
           )}
           
-          {user.role === 'driver' && order.status === 'accepted' && (
-            <Button 
-              size="lg" 
-              className="w-full" 
-              onClick={handleDriverComplete}
-              disabled={updateStatusMutation.isPending}
-            >
-              {updateStatusMutation.isPending ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <CheckCircle2 className="h-5 w-5" />
-              )}
-              Finalizar Pedido
-            </Button>
-          )}
+          {user.role === 'driver' && order.status === 'accepted' && (() => {
+            const allValidated = order.order_deliveries?.every((d: any) => !!d.validated_at) ?? false;
+            const pendingCount = order.order_deliveries?.filter((d: any) => !d.validated_at).length ?? 0;
+            
+            return (
+              <div className="space-y-2">
+                {!allValidated && (
+                  <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-sm text-amber-800">
+                    <p className="font-medium">⚠️ {pendingCount} entrega(s) pendente(s) de validação</p>
+                    <p className="text-xs mt-1">Valide todas as entregas com os códigos dos clientes antes de finalizar.</p>
+                  </div>
+                )}
+                <Button 
+                  size="lg" 
+                  className="w-full" 
+                  onClick={handleDriverComplete}
+                  disabled={updateStatusMutation.isPending || !allValidated}
+                >
+                  {updateStatusMutation.isPending ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="h-5 w-5" />
+                  )}
+                  Finalizar Pedido
+                </Button>
+              </div>
+            );
+          })()}
 
           {/* Company actions */}
           {user.role === 'company' && order.status === 'driver_completed' && (
