@@ -237,6 +237,8 @@ export type Database = {
           code_sent_at: string | null
           created_at: string
           customer_id: string | null
+          customer_name: string | null
+          customer_phone: string | null
           dropoff_address: string
           id: string
           notes: string | null
@@ -252,6 +254,8 @@ export type Database = {
           code_sent_at?: string | null
           created_at?: string
           customer_id?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
           dropoff_address: string
           id?: string
           notes?: string | null
@@ -267,6 +271,8 @@ export type Database = {
           code_sent_at?: string | null
           created_at?: string
           customer_id?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
           dropoff_address?: string
           id?: string
           notes?: string | null

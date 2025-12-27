@@ -19,6 +19,7 @@ interface DeliveryCodeDisplayProps {
   customerName?: string;
   isValidated?: boolean;
   codeSentAt?: string | null;
+  alwaysVisible?: boolean;
 }
 
 export const DeliveryCodeDisplay = ({
@@ -28,8 +29,9 @@ export const DeliveryCodeDisplay = ({
   customerName,
   isValidated = false,
   codeSentAt,
+  alwaysVisible = false,
 }: DeliveryCodeDisplayProps) => {
-  const [showCode, setShowCode] = useState(false);
+  const [showCode, setShowCode] = useState(alwaysVisible);
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {

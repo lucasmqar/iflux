@@ -10,6 +10,7 @@ import { useCompanyProfile } from '@/hooks/useCompanyProfiles';
 import { useOrderRating } from '@/hooks/useOrderRating';
 import { RatingModal } from '@/components/RatingModal';
 import { DeliveryCodeValidation } from '@/components/DeliveryCodeValidation';
+import { DeliveryCodeDisplay } from '@/components/DeliveryCodeDisplay';
 import { formatBrasiliaDateShort, PACKAGE_TYPE_LABELS } from '@/types';
 import { toast } from 'sonner';
 import { 
@@ -25,6 +26,7 @@ import {
   Star,
   Shield,
   AlertTriangle,
+  Phone,
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -171,7 +173,7 @@ const PedidoDetalhes = () => {
 
   return (
     <AppLayout>
-      <div className="max-w-3xl mx-auto space-y-6">
+      <div className="max-w-3xl mx-auto space-y-6 px-0 sm:px-4 overflow-x-hidden">
         {/* Header */}
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
@@ -351,6 +353,37 @@ const PedidoDetalhes = () => {
                         <div className="p-3 rounded-lg bg-secondary/50 text-sm text-muted-foreground">
                           <strong>Obs:</strong> {delivery.notes}
                         </div>
+                      )}
+
+                      {/* Customer info for company */}
+                      {user.role === 'company' && (delivery.customer_name || delivery.customer_phone) && (
+                        <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+                          <div className="flex items-center gap-2 text-sm">
+                            <User className="h-4 w-4 text-blue-600" />
+                            <span className="font-medium text-blue-900">
+                              {delivery.customer_name || 'Cliente'}
+                            </span>
+                            {delivery.customer_phone && (
+                              <>
+                                <Phone className="h-4 w-4 text-blue-600 ml-2" />
+                                <span className="text-blue-700">{delivery.customer_phone}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Company: Show delivery code - ALWAYS VISIBLE */}
+                      {user.role === 'company' && delivery.code_hash && order.status !== 'pending' && (
+                        <DeliveryCodeDisplay
+                          code="------"
+                          deliveryIndex={index}
+                          customerPhone={delivery.customer_phone}
+                          customerName={delivery.customer_name}
+                          isValidated={isValidated}
+                          codeSentAt={delivery.code_sent_at}
+                          alwaysVisible={true}
+                        />
                       )}
                       
                       {/* Driver: Show code validation */}

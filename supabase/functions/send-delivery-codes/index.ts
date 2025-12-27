@@ -116,13 +116,10 @@ serve(async (req) => {
       );
     }
 
-    // Get all deliveries for this order with customer info
+    // Get all deliveries for this order - now with direct customer_name and customer_phone
     const { data: deliveries, error: deliveriesError } = await supabase
       .from('order_deliveries')
-      .select(`
-        *,
-        customers(name, phone)
-      `)
+      .select('*')
       .eq('order_id', orderId);
 
     if (deliveriesError) {
@@ -146,9 +143,9 @@ serve(async (req) => {
         continue;
       }
 
-      // Get customer phone
-      const customerPhone = delivery.customers?.phone;
-      const customerName = delivery.customers?.name || 'Cliente';
+      // Get customer phone - directly from delivery or from linked customer
+      const customerPhone = delivery.customer_phone;
+      const customerName = delivery.customer_name || 'Cliente';
 
       if (!customerPhone) {
         console.log(`Delivery ${delivery.id} has no customer phone, skipping SMS`);

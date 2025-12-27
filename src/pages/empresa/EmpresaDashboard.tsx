@@ -124,7 +124,7 @@ const EmpresaDashboard = () => {
 
   return (
     <AppLayout>
-      <div className="space-y-8">
+      <div className="space-y-8 overflow-x-hidden">
         {/* Expired credit banner */}
         <ExpiredCreditBanner />
 

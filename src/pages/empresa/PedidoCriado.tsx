@@ -2,12 +2,12 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { DeliveryCodeDisplay } from '@/components/DeliveryCodeDisplay';
+import { PACKAGE_TYPE_LABELS, PackageType } from '@/types';
 import { 
   CheckCircle2, 
   ArrowRight, 
   Copy, 
   Check,
-  Send,
   AlertTriangle,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -19,8 +19,10 @@ interface OrderSuccessState {
   deliveries: {
     id: string;
     dropoffAddress: string;
-    packageType: string;
+    packageType: PackageType;
     suggestedPrice: number;
+    customerName?: string;
+    customerPhone?: string;
   }[];
   totalValue: number;
 }
@@ -41,7 +43,7 @@ const PedidoCriado = () => {
 
   const handleCopyAllCodes = async () => {
     const codes = deliveries.map((d, i) => 
-      `Entrega ${i + 1}: ${deliveryCodes[d.id]}`
+      `Entrega ${i + 1}${d.customerName ? ` (${d.customerName})` : ''}: ${deliveryCodes[d.id]}`
     ).join('\n');
     
     try {
@@ -56,7 +58,7 @@ const PedidoCriado = () => {
 
   return (
     <AppLayout>
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="max-w-2xl mx-auto space-y-6 px-0 sm:px-4">
         {/* Success Header */}
         <div className="text-center space-y-4 py-6">
           <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto">
@@ -74,10 +76,10 @@ const PedidoCriado = () => {
         <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-50 border border-amber-200">
           <AlertTriangle className="h-6 w-6 text-amber-600 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-medium text-amber-800">Importante: Salve os códigos!</p>
+            <p className="font-medium text-amber-800">Códigos Gerados!</p>
             <p className="text-sm text-amber-700">
-              Os códigos abaixo são únicos e só serão exibidos nesta tela. 
-              Copie e envie para os clientes para que possam confirmar a entrega.
+              Os códigos de validação serão enviados automaticamente via SMS para os clientes 
+              quando o entregador aceitar o pedido. Você também pode enviá-los manualmente via WhatsApp.
             </p>
           </div>
         </div>
@@ -101,17 +103,32 @@ const PedidoCriado = () => {
           {deliveries.map((delivery, index) => (
             <div key={delivery.id} className="card-static overflow-hidden">
               <div className="p-4 border-b border-border bg-secondary/30">
-                <p className="font-medium text-foreground">
-                  Entrega {index + 1} - R$ {delivery.suggestedPrice.toFixed(2)}
-                </p>
-                <p className="text-sm text-muted-foreground truncate">
-                  {delivery.dropoffAddress}
-                </p>
+                <div className="flex items-center justify-between">
+                  <p className="font-medium text-foreground">
+                    Entrega {index + 1} - {PACKAGE_TYPE_LABELS[delivery.packageType]}
+                  </p>
+                  <span className="text-sm font-semibold text-foreground">
+                    R$ {delivery.suggestedPrice.toFixed(2)}
+                  </span>
+                </div>
+                {delivery.customerName && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Cliente: {delivery.customerName}
+                    {delivery.customerPhone && ` • ${delivery.customerPhone}`}
+                  </p>
+                )}
+                {delivery.dropoffAddress && (
+                  <p className="text-sm text-muted-foreground truncate">
+                    {delivery.dropoffAddress}
+                  </p>
+                )}
               </div>
               <div className="p-4">
                 <DeliveryCodeDisplay
                   code={deliveryCodes[delivery.id]}
                   deliveryIndex={index}
+                  customerPhone={delivery.customerPhone?.replace(/\D/g, '')}
+                  customerName={delivery.customerName}
                 />
               </div>
             </div>
