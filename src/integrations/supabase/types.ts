@@ -89,6 +89,91 @@ export type Database = {
         }
         Relationships: []
       }
+      customers: {
+        Row: {
+          address: string | null
+          company_id: string
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          company_id: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          company_id?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customers_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      delivery_audit_logs: {
+        Row: {
+          attempted_code: string
+          created_at: string
+          delivery_id: string
+          driver_user_id: string
+          id: string
+          ip_address: string | null
+          success: boolean
+          user_agent: string | null
+        }
+        Insert: {
+          attempted_code: string
+          created_at?: string
+          delivery_id: string
+          driver_user_id: string
+          id?: string
+          ip_address?: string | null
+          success?: boolean
+          user_agent?: string | null
+        }
+        Update: {
+          attempted_code?: string
+          created_at?: string
+          delivery_id?: string
+          driver_user_id?: string
+          id?: string
+          ip_address?: string | null
+          success?: boolean
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_audit_logs_delivery_id_fkey"
+            columns: ["delivery_id"]
+            isOneToOne: false
+            referencedRelation: "order_deliveries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_profiles: {
         Row: {
           created_at: string
@@ -148,7 +233,10 @@ export type Database = {
       }
       order_deliveries: {
         Row: {
+          code_hash: string | null
+          code_sent_at: string | null
           created_at: string
+          customer_id: string | null
           dropoff_address: string
           id: string
           notes: string | null
@@ -156,9 +244,14 @@ export type Database = {
           package_type: Database["public"]["Enums"]["package_type"]
           pickup_address: string
           suggested_price: number
+          validated_at: string | null
+          validation_attempts: number
         }
         Insert: {
+          code_hash?: string | null
+          code_sent_at?: string | null
           created_at?: string
+          customer_id?: string | null
           dropoff_address: string
           id?: string
           notes?: string | null
@@ -166,9 +259,14 @@ export type Database = {
           package_type: Database["public"]["Enums"]["package_type"]
           pickup_address: string
           suggested_price?: number
+          validated_at?: string | null
+          validation_attempts?: number
         }
         Update: {
+          code_hash?: string | null
+          code_sent_at?: string | null
           created_at?: string
+          customer_id?: string | null
           dropoff_address?: string
           id?: string
           notes?: string | null
@@ -176,8 +274,17 @@ export type Database = {
           package_type?: Database["public"]["Enums"]["package_type"]
           pickup_address?: string
           suggested_price?: number
+          validated_at?: string | null
+          validation_attempts?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "order_deliveries_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "order_deliveries_order_id_fkey"
             columns: ["order_id"]
@@ -317,6 +424,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_delivery_code: { Args: never; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -325,6 +433,15 @@ export type Database = {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
+        }
+        Returns: boolean
+      }
+      hash_delivery_code: { Args: { code: string }; Returns: string }
+      validate_delivery_code: {
+        Args: {
+          p_code: string
+          p_delivery_id: string
+          p_driver_user_id: string
         }
         Returns: boolean
       }
