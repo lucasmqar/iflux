@@ -11,6 +11,11 @@ const Dashboard = () => {
     return <Navigate to="/" replace />;
   }
 
+  // If user has no role (Google signup incomplete), redirect to complete profile
+  if (!user.role) {
+    return <Navigate to="/completar-perfil" replace />;
+  }
+
   switch (user.role) {
     case 'admin':
       return <AdminDashboard />;

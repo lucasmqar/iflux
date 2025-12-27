@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, AppRole } from '@/contexts/AuthContext';
 import { AppLayout } from '@/components/AppLayout';
 import { TipCard } from '@/components/TipCard';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useCompanyProfile, useCreateCompanyProfile, useUpdateCompanyProfile } from '@/hooks/useCompanyProfiles';
 import { useDriverProfile, useCreateDriverProfile, useUpdateDriverProfile, VehicleType } from '@/hooks/useDriverProfiles';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { 
   Loader2, 
@@ -20,11 +21,12 @@ import {
   CheckCircle2,
   ArrowLeft,
   ArrowRight,
-  User
+  User,
+  Phone
 } from 'lucide-react';
 
 const CompletarPerfil = () => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const navigate = useNavigate();
   
   const { data: companyProfile, isLoading: companyLoading } = useCompanyProfile(user?.id);
@@ -35,9 +37,16 @@ const CompletarPerfil = () => {
   const createDriverProfile = useCreateDriverProfile();
   const updateDriverProfile = useUpdateDriverProfile();
 
+  // Detect if this is a new OAuth user without role
+  const needsRoleSelection = user && !user.role;
+
   // Step control
-  const [step, setStep] = useState(1);
-  const totalSteps = 2;
+  const [step, setStep] = useState(needsRoleSelection ? 0 : 1);
+  const totalSteps = needsRoleSelection ? 3 : 2;
+
+  // Role selection for Google signup
+  const [selectedRole, setSelectedRole] = useState<'company' | 'driver'>('company');
+  const [phone, setPhone] = useState(user?.phone || '');
 
   // Company fields
   const [companyName, setCompanyName] = useState('');
@@ -50,6 +59,15 @@ const CompletarPerfil = () => {
   const [vehiclePlate, setVehiclePlate] = useState('');
 
   const [loading, setLoading] = useState(false);
+
+  // Update step when needsRoleSelection changes
+  useEffect(() => {
+    if (needsRoleSelection && step !== 0) {
+      setStep(0);
+    } else if (!needsRoleSelection && step === 0) {
+      setStep(1);
+    }
+  }, [needsRoleSelection]);
 
   useEffect(() => {
     if (companyProfile) {
@@ -67,11 +85,17 @@ const CompletarPerfil = () => {
     }
   }, [driverProfile]);
 
+  useEffect(() => {
+    if (user?.phone) {
+      setPhone(user.phone);
+    }
+  }, [user?.phone]);
+
   if (!user) return null;
 
   const isLoading = companyLoading || driverLoading;
-  const isCompany = user.role === 'company';
-  const isDriver = user.role === 'driver';
+  const isCompany = needsRoleSelection ? selectedRole === 'company' : user.role === 'company';
+  const isDriver = needsRoleSelection ? selectedRole === 'driver' : user.role === 'driver';
 
   const formatCnpj = (value: string) => {
     const numbers = value.replace(/\D/g, '');
@@ -88,6 +112,57 @@ const CompletarPerfil = () => {
     return `${clean.slice(0, 3)}-${clean.slice(3, 7)}`;
   };
 
+  const formatPhone = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length <= 2) return numbers;
+    if (numbers.length <= 7) return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
+    if (numbers.length <= 11) return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
+    return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`;
+  };
+
+  const handleRoleSelection = async () => {
+    if (!phone.trim()) {
+      toast.error('WhatsApp é obrigatório');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Set the role using the secure function
+      const { data, error } = await supabase.rpc('set_my_role', { p_role: selectedRole });
+
+      if (error) {
+        if (error.message.includes('role_already_set')) {
+          toast.error('Você já possui um tipo de conta definido');
+        } else if (error.message.includes('invalid_role')) {
+          toast.error('Tipo de conta inválido');
+        } else {
+          throw error;
+        }
+        setLoading(false);
+        return;
+      }
+
+      // Update phone in profile
+      await supabase
+        .from('profiles')
+        .update({ phone })
+        .eq('id', user.id);
+
+      // Update local user state
+      updateUser({ role: selectedRole as AppRole, phone });
+      
+      toast.success('Tipo de conta definido! Complete seus dados.');
+      setStep(1);
+    } catch (error) {
+      console.error('Error setting role:', error);
+      toast.error('Erro ao definir tipo de conta');
+    }
+
+    setLoading(false);
+  };
+
   const validateStep1 = () => {
     if (isCompany) {
       if (!companyName.trim()) {
@@ -100,7 +175,7 @@ const CompletarPerfil = () => {
 
   const handleNextStep = () => {
     if (validateStep1()) {
-      setStep(2);
+      setStep(step + 1);
     }
   };
 
@@ -174,6 +249,18 @@ const CompletarPerfil = () => {
     setLoading(false);
   };
 
+  const handleBack = () => {
+    if (step === 0) {
+      navigate('/auth');
+    } else if (step === 1 && needsRoleSelection) {
+      setStep(0);
+    } else if (step === 1) {
+      navigate('/dashboard');
+    } else {
+      setStep(step - 1);
+    }
+  };
+
   if (isLoading) {
     return (
       <AppLayout>
@@ -184,17 +271,22 @@ const CompletarPerfil = () => {
     );
   }
 
+  const currentStep = needsRoleSelection ? step : step;
+  const displayStep = needsRoleSelection ? step + 1 : step;
+
   return (
     <AppLayout>
       <div className="max-w-md mx-auto space-y-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => step === 1 ? navigate('/dashboard') : setStep(1)}>
+          <Button variant="ghost" size="icon" onClick={handleBack}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex-1">
-            <h1 className="text-2xl font-semibold text-foreground">Completar Perfil</h1>
+            <h1 className="text-2xl font-semibold text-foreground">
+              {needsRoleSelection && step === 0 ? 'Tipo de Conta' : 'Completar Perfil'}
+            </h1>
             <p className="text-muted-foreground">
-              Etapa {step} de {totalSteps}
+              Etapa {displayStep} de {totalSteps}
             </p>
           </div>
         </div>
@@ -205,220 +297,82 @@ const CompletarPerfil = () => {
             <div
               key={i}
               className={`h-2 flex-1 rounded-full transition-colors ${
-                i + 1 <= step ? 'bg-primary' : 'bg-muted'
+                i + 1 <= displayStep ? 'bg-primary' : 'bg-muted'
               }`}
             />
           ))}
         </div>
 
-        {isCompany && (
-          <TipCard tipKey="completar-empresa" title="Importante">
-            Complete seu cadastro para solicitar entregas. O endereço será usado como padrão nas suas solicitações.
-          </TipCard>
-        )}
+        {/* Step 0: Role Selection (only for Google OAuth users) */}
+        {needsRoleSelection && step === 0 && (
+          <>
+            <TipCard tipKey="google-cadastro" title="Bem-vindo!">
+              Você entrou com Google. Selecione o tipo de conta e informe seu WhatsApp para continuar.
+            </TipCard>
 
-        {isDriver && (
-          <TipCard tipKey="completar-entregador" title="Importante">
-            Cadastre seu veículo corretamente. Essas informações serão visíveis para as empresas.
-          </TipCard>
-        )}
-
-        <form onSubmit={handleSubmit} className="card-static p-6 space-y-6">
-          {/* Step 1: Identification */}
-          {step === 1 && (
-            <div className="space-y-4 animate-fade-in">
+            <div className="card-static p-6 space-y-6 animate-fade-in">
               <div className="flex items-center gap-2 text-lg font-semibold text-foreground mb-4">
                 <User className="h-5 w-5" />
-                <span>Identificação</span>
+                <span>Tipo de Conta</span>
               </div>
 
-              {isCompany && (
-                <>
-                  <div className="p-3 rounded-lg bg-blue-50 text-blue-800 text-sm">
-                    <Building2 className="h-4 w-4 inline mr-2" />
-                    Preencha os dados da sua empresa
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="company-name">Nome da Empresa *</Label>
-                    <div className="relative">
-                      <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="company-name"
-                        type="text"
-                        placeholder="Nome da sua empresa"
-                        value={companyName}
-                        onChange={(e) => setCompanyName(e.target.value)}
-                        className="pl-10"
-                        required
-                        disabled={loading}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="company-cnpj">CNPJ (opcional)</Label>
-                    <div className="relative">
-                      <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="company-cnpj"
-                        type="text"
-                        placeholder="00.000.000/0000-00"
-                        value={companyCnpj}
-                        onChange={(e) => setCompanyCnpj(formatCnpj(e.target.value))}
-                        className="pl-10"
-                        disabled={loading}
-                        maxLength={18}
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {isDriver && (
-                <>
-                  <div className="p-3 rounded-lg bg-emerald-50 text-emerald-800 text-sm">
-                    <Truck className="h-4 w-4 inline mr-2" />
-                    Selecione o tipo de veículo
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Tipo de Veículo *</Label>
-                    <RadioGroup
-                      value={vehicleType}
-                      onValueChange={(v) => setVehicleType(v as VehicleType)}
-                      className="grid grid-cols-3 gap-3"
+              <div className="space-y-3">
+                <Label>Escolha seu tipo de conta</Label>
+                <RadioGroup
+                  value={selectedRole}
+                  onValueChange={(v) => setSelectedRole(v as 'company' | 'driver')}
+                  className="grid grid-cols-2 gap-3"
+                >
+                  <div>
+                    <RadioGroupItem value="company" id="role-company" className="peer sr-only" />
+                    <Label
+                      htmlFor="role-company"
+                      className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
                     >
-                      <div>
-                        <RadioGroupItem value="moto" id="vehicle-moto" className="peer sr-only" />
-                        <Label
-                          htmlFor="vehicle-moto"
-                          className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all"
-                        >
-                          <span className="text-3xl mb-2">🏍️</span>
-                          <span className="text-sm font-medium">Moto</span>
-                        </Label>
-                      </div>
-                      <div>
-                        <RadioGroupItem value="car" id="vehicle-car" className="peer sr-only" />
-                        <Label
-                          htmlFor="vehicle-car"
-                          className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all"
-                        >
-                          <span className="text-3xl mb-2">🚗</span>
-                          <span className="text-sm font-medium">Carro</span>
-                        </Label>
-                      </div>
-                      <div>
-                        <RadioGroupItem value="bike" id="vehicle-bike" className="peer sr-only" />
-                        <Label
-                          htmlFor="vehicle-bike"
-                          className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all"
-                        >
-                          <span className="text-3xl mb-2">🚲</span>
-                          <span className="text-sm font-medium">Bike</span>
-                        </Label>
-                      </div>
-                    </RadioGroup>
+                      <Building2 className="mb-2 h-6 w-6" />
+                      <span className="text-sm font-medium">Empresa</span>
+                      <span className="text-xs text-muted-foreground">Solicitar entregas</span>
+                    </Label>
                   </div>
-                </>
-              )}
+                  <div>
+                    <RadioGroupItem value="driver" id="role-driver" className="peer sr-only" />
+                    <Label
+                      htmlFor="role-driver"
+                      className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                    >
+                      <Truck className="mb-2 h-6 w-6" />
+                      <span className="text-sm font-medium">Entregador</span>
+                      <span className="text-xs text-muted-foreground">Realizar entregas</span>
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone">WhatsApp *</Label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="(00) 00000-0000"
+                    value={phone}
+                    onChange={(e) => setPhone(formatPhone(e.target.value))}
+                    className="pl-10"
+                    required
+                    disabled={loading}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">Usado para contato entre empresa e entregador</p>
+              </div>
 
               <Button 
                 type="button" 
                 className="w-full" 
                 size="lg" 
-                onClick={handleNextStep}
+                onClick={handleRoleSelection}
+                disabled={loading}
               >
-                Continuar
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
-            </div>
-          )}
-
-          {/* Step 2: Details */}
-          {step === 2 && (
-            <div className="space-y-4 animate-fade-in">
-              <div className="flex items-center gap-2 text-lg font-semibold text-foreground mb-4">
-                {isCompany ? <MapPin className="h-5 w-5" /> : <Car className="h-5 w-5" />}
-                <span>{isCompany ? 'Endereço' : 'Dados do Veículo'}</span>
-              </div>
-
-              {isCompany && (
-                <>
-                  <div className="p-3 rounded-lg bg-blue-50 text-blue-800 text-sm">
-                    Informe o endereço padrão para retiradas
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="company-address">Endereço Padrão *</Label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="company-address"
-                        type="text"
-                        placeholder="Endereço completo para retiradas"
-                        value={companyAddress}
-                        onChange={(e) => setCompanyAddress(e.target.value)}
-                        className="pl-10"
-                        required
-                        disabled={loading}
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Este endereço será preenchido automaticamente nas suas solicitações de entrega
-                    </p>
-                  </div>
-                </>
-              )}
-
-              {isDriver && (
-                <>
-                  <div className="p-3 rounded-lg bg-emerald-50 text-emerald-800 text-sm">
-                    Informe os dados do seu veículo
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="vehicle-model">Modelo do Veículo *</Label>
-                    <div className="relative">
-                      <Car className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="vehicle-model"
-                        type="text"
-                        placeholder="Ex: Honda CG 160"
-                        value={vehicleModel}
-                        onChange={(e) => setVehicleModel(e.target.value)}
-                        className="pl-10"
-                        required
-                        disabled={loading}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="vehicle-plate">Placa do Veículo *</Label>
-                    <div className="relative">
-                      <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="vehicle-plate"
-                        type="text"
-                        placeholder="ABC-1234"
-                        value={vehiclePlate}
-                        onChange={(e) => setVehiclePlate(formatPlate(e.target.value))}
-                        className="pl-10"
-                        required
-                        disabled={loading}
-                        maxLength={8}
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      A placa será visível para as empresas que você aceitar entregas
-                    </p>
-                  </div>
-                </>
-              )}
-
-              <Button type="submit" className="w-full" size="lg" disabled={loading}>
                 {loading ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -426,14 +380,242 @@ const CompletarPerfil = () => {
                   </>
                 ) : (
                   <>
-                    <CheckCircle2 className="h-4 w-4" />
-                    Finalizar Cadastro
+                    Continuar
+                    <ArrowRight className="h-4 w-4 ml-2" />
                   </>
                 )}
               </Button>
             </div>
-          )}
-        </form>
+          </>
+        )}
+
+        {/* Show company/driver specific tips only after role is set */}
+        {step >= 1 && isCompany && (
+          <TipCard tipKey="completar-empresa" title="Importante">
+            Complete seu cadastro para solicitar entregas. O endereço será usado como padrão nas suas solicitações.
+          </TipCard>
+        )}
+
+        {step >= 1 && isDriver && (
+          <TipCard tipKey="completar-entregador" title="Importante">
+            Cadastre seu veículo corretamente. Essas informações serão visíveis para as empresas.
+          </TipCard>
+        )}
+
+        {/* Steps 1 & 2: Profile completion */}
+        {step >= 1 && (
+          <form onSubmit={handleSubmit} className="card-static p-6 space-y-6">
+            {/* Step 1: Identification */}
+            {((needsRoleSelection && step === 1) || (!needsRoleSelection && step === 1)) && (
+              <div className="space-y-4 animate-fade-in">
+                <div className="flex items-center gap-2 text-lg font-semibold text-foreground mb-4">
+                  <User className="h-5 w-5" />
+                  <span>Identificação</span>
+                </div>
+
+                {isCompany && (
+                  <>
+                    <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950 text-blue-800 dark:text-blue-200 text-sm">
+                      <Building2 className="h-4 w-4 inline mr-2" />
+                      Preencha os dados da sua empresa
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="company-name">Nome da Empresa *</Label>
+                      <div className="relative">
+                        <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="company-name"
+                          type="text"
+                          placeholder="Nome da sua empresa"
+                          value={companyName}
+                          onChange={(e) => setCompanyName(e.target.value)}
+                          className="pl-10"
+                          required
+                          disabled={loading}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="company-cnpj">CNPJ (opcional)</Label>
+                      <div className="relative">
+                        <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="company-cnpj"
+                          type="text"
+                          placeholder="00.000.000/0000-00"
+                          value={companyCnpj}
+                          onChange={(e) => setCompanyCnpj(formatCnpj(e.target.value))}
+                          className="pl-10"
+                          disabled={loading}
+                          maxLength={18}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {isDriver && (
+                  <>
+                    <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-200 text-sm">
+                      <Truck className="h-4 w-4 inline mr-2" />
+                      Selecione o tipo de veículo
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Tipo de Veículo *</Label>
+                      <RadioGroup
+                        value={vehicleType}
+                        onValueChange={(v) => setVehicleType(v as VehicleType)}
+                        className="grid grid-cols-3 gap-3"
+                      >
+                        <div>
+                          <RadioGroupItem value="moto" id="vehicle-moto" className="peer sr-only" />
+                          <Label
+                            htmlFor="vehicle-moto"
+                            className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all"
+                          >
+                            <span className="text-3xl mb-2">🏍️</span>
+                            <span className="text-sm font-medium">Moto</span>
+                          </Label>
+                        </div>
+                        <div>
+                          <RadioGroupItem value="car" id="vehicle-car" className="peer sr-only" />
+                          <Label
+                            htmlFor="vehicle-car"
+                            className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all"
+                          >
+                            <span className="text-3xl mb-2">🚗</span>
+                            <span className="text-sm font-medium">Carro</span>
+                          </Label>
+                        </div>
+                        <div>
+                          <RadioGroupItem value="bike" id="vehicle-bike" className="peer sr-only" />
+                          <Label
+                            htmlFor="vehicle-bike"
+                            className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-all"
+                          >
+                            <span className="text-3xl mb-2">🚲</span>
+                            <span className="text-sm font-medium">Bike</span>
+                          </Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+                  </>
+                )}
+
+                <Button 
+                  type="button" 
+                  className="w-full" 
+                  size="lg" 
+                  onClick={handleNextStep}
+                >
+                  Continuar
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              </div>
+            )}
+
+            {/* Step 2: Details */}
+            {((needsRoleSelection && step === 2) || (!needsRoleSelection && step === 2)) && (
+              <div className="space-y-4 animate-fade-in">
+                <div className="flex items-center gap-2 text-lg font-semibold text-foreground mb-4">
+                  {isCompany ? <MapPin className="h-5 w-5" /> : <Car className="h-5 w-5" />}
+                  <span>{isCompany ? 'Endereço' : 'Dados do Veículo'}</span>
+                </div>
+
+                {isCompany && (
+                  <>
+                    <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950 text-blue-800 dark:text-blue-200 text-sm">
+                      Informe o endereço padrão para retiradas
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="company-address">Endereço Padrão *</Label>
+                      <div className="relative">
+                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="company-address"
+                          type="text"
+                          placeholder="Endereço completo para retiradas"
+                          value={companyAddress}
+                          onChange={(e) => setCompanyAddress(e.target.value)}
+                          className="pl-10"
+                          required
+                          disabled={loading}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Este endereço será preenchido automaticamente nas suas solicitações de entrega
+                      </p>
+                    </div>
+                  </>
+                )}
+
+                {isDriver && (
+                  <>
+                    <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-200 text-sm">
+                      Informe os dados do seu veículo
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="vehicle-model">Modelo do Veículo *</Label>
+                      <div className="relative">
+                        <Car className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="vehicle-model"
+                          type="text"
+                          placeholder="Ex: Honda CG 160"
+                          value={vehicleModel}
+                          onChange={(e) => setVehicleModel(e.target.value)}
+                          className="pl-10"
+                          required
+                          disabled={loading}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="vehicle-plate">Placa do Veículo *</Label>
+                      <div className="relative">
+                        <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="vehicle-plate"
+                          type="text"
+                          placeholder="ABC-1234"
+                          value={vehiclePlate}
+                          onChange={(e) => setVehiclePlate(formatPlate(e.target.value))}
+                          className="pl-10"
+                          required
+                          disabled={loading}
+                          maxLength={8}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        A placa será visível para as empresas que você aceitar entregas
+                      </p>
+                    </div>
+                  </>
+                )}
+
+                <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="h-4 w-4" />
+                      Finalizar Cadastro
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+          </form>
+        )}
       </div>
     </AppLayout>
   );

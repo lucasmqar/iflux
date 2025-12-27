@@ -53,19 +53,24 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'basic' | 'details'>('basic');
   
-  const { signIn, signUp, signInWithGoogle, isAuthenticated, isLoading } = useAuth();
+  const { signIn, signUp, signInWithGoogle, isAuthenticated, isLoading, user } = useAuth();
   const [googleLoading, setGoogleLoading] = useState(false);
   const navigate = useNavigate();
   
   const createCompanyProfile = useCreateCompanyProfile();
   const createDriverProfile = useCreateDriverProfile();
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated - but check if role is missing for Google signup
   useEffect(() => {
-    if (isAuthenticated && !isLoading) {
-      navigate('/dashboard');
+    if (isAuthenticated && !isLoading && user) {
+      if (!user.role) {
+        // User signed in with Google but has no role - redirect to complete profile
+        navigate('/completar-perfil');
+      } else {
+        navigate('/dashboard');
+      }
     }
-  }, [isAuthenticated, isLoading, navigate]);
+  }, [isAuthenticated, isLoading, user, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

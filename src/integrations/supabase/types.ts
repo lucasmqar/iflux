@@ -446,6 +446,10 @@ export type Database = {
         Returns: boolean
       }
       hash_delivery_code: { Args: { code: string }; Returns: string }
+      set_my_role: {
+        Args: { p_role: Database["public"]["Enums"]["app_role"] }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
       validate_delivery_code: {
         Args: {
           p_code: string
