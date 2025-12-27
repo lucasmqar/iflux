@@ -127,7 +127,7 @@ const AdminDashboard = () => {
               title="Ativos Agora"
               value={activeUsers}
               icon={UserCheck}
-              iconClassName="bg-emerald-100"
+              iconClassName="bg-status-completed/15 text-status-completed"
               delay={150}
             />
           </div>
@@ -147,21 +147,21 @@ const AdminDashboard = () => {
               title="Aguardando"
               value={ordersStats?.pending || 0}
               icon={Clock}
-              iconClassName="bg-amber-100"
+              iconClassName="bg-status-open/15 text-status-open"
               delay={250}
             />
             <StatsCard
               title="Concluídos"
               value={ordersStats?.completed || 0}
               icon={CheckCircle2}
-              iconClassName="bg-emerald-100"
+              iconClassName="bg-status-completed/15 text-status-completed"
               delay={300}
             />
             <StatsCard
               title="Cancelados"
               value={ordersStats?.cancelled || 0}
               icon={XCircle}
-              iconClassName="bg-red-100"
+              iconClassName="bg-status-cancelled/15 text-status-cancelled"
               delay={350}
             />
           </div>

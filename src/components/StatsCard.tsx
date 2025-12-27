@@ -34,11 +34,11 @@ export const StatsCard = forwardRef<HTMLDivElement, StatsCardProps>(
           </div>
           <div
             className={cn(
-              'p-3 rounded-xl',
+              'p-3 rounded-xl text-foreground',
               iconClassName
             )}
           >
-            <Icon className="h-5 w-5 text-gray-800" />
+            <Icon className="h-5 w-5 text-current" />
           </div>
         </div>
         

@@ -140,7 +140,7 @@ const EntregadorDashboard = () => {
             title="Disponíveis"
             value={stats.available}
             icon={Clock}
-            iconClassName="bg-amber-100"
+            iconClassName="bg-status-open/15 text-status-open"
             delay={0}
             href="/pedidos-disponiveis"
           />
@@ -148,7 +148,7 @@ const EntregadorDashboard = () => {
             title="Em Andamento"
             value={stats.inProgress}
             icon={Truck}
-            iconClassName="bg-blue-100"
+            iconClassName="bg-status-accepted/15 text-status-accepted"
             delay={50}
             href="/pedidos-aceitos"
           />
@@ -156,7 +156,7 @@ const EntregadorDashboard = () => {
             title="Aguardando"
             value={driverCompletedOrders.length}
             icon={Package}
-            iconClassName="bg-purple-100"
+            iconClassName="bg-status-collected/15 text-status-collected"
             delay={100}
             href="/pedidos-finalizados"
           />
@@ -164,7 +164,7 @@ const EntregadorDashboard = () => {
             title="Concluídos"
             value={stats.completed}
             icon={CheckCircle2}
-            iconClassName="bg-emerald-100"
+            iconClassName="bg-status-completed/15 text-status-completed"
             delay={150}
             href="/entregador/concluidos"
           />
