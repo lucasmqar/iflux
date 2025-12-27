@@ -24,6 +24,7 @@ import PedidosPendentes from "./pages/empresa/PedidosPendentes";
 import PedidosEmAndamento from "./pages/empresa/PedidosEmAndamento";
 import ConfirmacaoEntrega from "./pages/empresa/ConfirmacaoEntrega";
 import EmpresaPedidosConcluidos from "./pages/empresa/PedidosConcluidos";
+import CodigosEntrega from "./pages/empresa/CodigosEntrega";
 
 // Entregador pages
 import PedidosDisponiveis from "./pages/entregador/PedidosDisponiveis";
@@ -70,6 +71,7 @@ const App = () => (
             <Route path="/pedidos-em-andamento" element={<PedidosEmAndamento />} />
             <Route path="/confirmacao-entrega" element={<ConfirmacaoEntrega />} />
             <Route path="/empresa/concluidos" element={<EmpresaPedidosConcluidos />} />
+            <Route path="/codigos-entrega" element={<CodigosEntrega />} />
 
             {/* Entregador routes */}
             <Route path="/pedidos-disponiveis" element={<PedidosDisponiveis />} />

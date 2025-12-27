@@ -158,12 +158,13 @@ serve(async (req) => {
       const code = generateCode();
       const codeHash = await hashCode(code);
 
-      // Update delivery with code hash
+      // Update delivery with code hash AND original code for company visibility
       const { error: updateError } = await supabase
         .from('order_deliveries')
         .update({
           code_hash: codeHash,
           code_sent_at: new Date().toISOString(),
+          delivery_code: code, // Store original code for company to see
         })
         .eq('id', delivery.id);
 
