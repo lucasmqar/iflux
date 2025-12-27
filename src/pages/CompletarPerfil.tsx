@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth, AppRole } from '@/contexts/AuthContext';
-import { AppLayout } from '@/components/AppLayout';
 import { TipCard } from '@/components/TipCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +10,9 @@ import { useCompanyProfile, useCreateCompanyProfile, useUpdateCompanyProfile } f
 import { useDriverProfile, useCreateDriverProfile, useUpdateDriverProfile, VehicleType } from '@/hooks/useDriverProfiles';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useTheme } from 'next-themes';
+import logoClaro from '@/assets/logo_tclaro.png';
+import logoEscuro from '@/assets/logo_tescuro.png';
 import { 
   Loader2, 
   Building2, 
@@ -26,8 +28,11 @@ import {
 } from 'lucide-react';
 
 const CompletarPerfil = () => {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, isAuthenticated, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { resolvedTheme } = useTheme();
+  
+  const currentLogo = resolvedTheme === 'dark' ? logoEscuro : logoClaro;
   
   const { data: companyProfile, isLoading: companyLoading } = useCompanyProfile(user?.id);
   const { data: driverProfile, isLoading: driverLoading } = useDriverProfile(user?.id);
@@ -91,7 +96,28 @@ const CompletarPerfil = () => {
     }
   }, [user?.phone]);
 
+  // Redirect to auth if not authenticated
+  if (!authLoading && !isAuthenticated) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   if (!user) return null;
+
+  // If user has role and profile, redirect to dashboard
+  const hasCompletedProfile = user.role && (
+    (user.role === 'company' && companyProfile) ||
+    (user.role === 'driver' && driverProfile) ||
+    user.role === 'admin'
+  );
 
   const isLoading = companyLoading || driverLoading;
   const isCompany = needsRoleSelection ? selectedRole === 'company' : user.role === 'company';
@@ -263,19 +289,31 @@ const CompletarPerfil = () => {
 
   if (isLoading) {
     return (
-      <AppLayout>
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </AppLayout>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
     );
+  }
+
+  // Redirect to dashboard if profile already complete (but not during loading)
+  if (!isLoading && hasCompletedProfile) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   const currentStep = needsRoleSelection ? step : step;
   const displayStep = needsRoleSelection ? step + 1 : step;
 
   return (
-    <AppLayout>
+    <div className="min-h-screen bg-background">
+      {/* Simple header for profile completion */}
+      <header className="bg-card border-b border-border p-4">
+        <div className="flex items-center justify-center gap-3">
+          <img src={currentLogo} alt="FLUX" className="w-10 h-10 object-contain" />
+          <span className="font-brand text-xl text-foreground">FLUX</span>
+        </div>
+      </header>
+      
+      <main className="p-4 lg:p-6">
       <div className="max-w-md mx-auto space-y-6">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={handleBack}>
@@ -617,7 +655,8 @@ const CompletarPerfil = () => {
           </form>
         )}
       </div>
-    </AppLayout>
+      </main>
+    </div>
   );
 };
 
