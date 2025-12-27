@@ -11,7 +11,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { cn, formatOrderCode } from '@/lib/utils';
 
 interface DeliveryCodeDisplayProps {
   code: string;
@@ -55,7 +55,7 @@ export const DeliveryCodeDisplay = ({
     }
     
     const phone = customerPhone.replace(/\D/g, '');
-    const orderShortId = orderId ? orderId.slice(0, 8) : '';
+    const orderCode = orderId ? formatOrderCode(orderId) : '';
     
     // Mensagem clara e legível para o cliente
     const message = encodeURIComponent(
@@ -66,7 +66,7 @@ export const DeliveryCodeDisplay = ({
       `🔐 *CÓDIGO DE ENTREGA:*\n` +
       `*${code}*\n` +
       `━━━━━━━━━━━━━━━━━━━━\n\n` +
-      (orderShortId ? `📋 Pedido: #${orderShortId}\n\n` : '') +
+      (orderCode ? `📋 Pedido: ${orderCode}\n\n` : '') +
       `⚠️ *IMPORTANTE:* Este código é único e confidencial. Informe-o *somente* ao entregador no momento da entrega.\n\n` +
       `Obrigado por confiar na FLUX! 🚚`
     );

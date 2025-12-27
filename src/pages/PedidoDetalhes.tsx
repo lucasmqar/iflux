@@ -12,6 +12,7 @@ import { RatingModal } from '@/components/RatingModal';
 import { DeliveryCodeValidation } from '@/components/DeliveryCodeValidation';
 import { DeliveryCodeDisplay } from '@/components/DeliveryCodeDisplay';
 import { formatBrasiliaDateShort, PACKAGE_TYPE_LABELS } from '@/types';
+import { formatOrderCode } from '@/lib/utils';
 import { toast } from 'sonner';
 import { 
   ArrowLeft, 
@@ -91,14 +92,14 @@ const PedidoDetalhes = () => {
 
   const handleWhatsAppDriver = () => {
     if (driverUserProfile?.phone) {
-      const url = `https://wa.me/55${driverUserProfile.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá! Sou da empresa do pedido #${order.id.slice(0, 8)}`)}`;
+      const url = `https://wa.me/55${driverUserProfile.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá! Sou da empresa do pedido ${formatOrderCode(order.id)}`)}`;
       window.open(url, '_blank');
     }
   };
 
   const handleWhatsAppCompany = () => {
     if (companyUserProfile?.phone) {
-      const url = `https://wa.me/55${companyUserProfile.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá! Sou o entregador do pedido #${order.id.slice(0, 8)}`)}`;
+      const url = `https://wa.me/55${companyUserProfile.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá! Sou o entregador do pedido ${formatOrderCode(order.id)}`)}`;
       window.open(url, '_blank');
     }
   };
@@ -181,7 +182,7 @@ const PedidoDetalhes = () => {
           </Button>
           <div className="flex-1">
             <h1 className="text-2xl font-semibold text-foreground">
-              Pedido #{order.id.slice(0, 8)}
+              Pedido {formatOrderCode(order.id)}
             </h1>
             <p className="text-muted-foreground text-sm">{formatBrasiliaDateShort(new Date(order.created_at))}</p>
             <div className="mt-2">

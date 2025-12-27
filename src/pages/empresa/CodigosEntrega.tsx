@@ -7,6 +7,7 @@ import { useOrders } from '@/hooks/useOrders';
 import { StatusBadge } from '@/components/StatusBadge';
 import { DeliveryCodeDisplay } from '@/components/DeliveryCodeDisplay';
 import { PACKAGE_TYPE_LABELS, formatBrasiliaDateShort } from '@/types';
+import { formatOrderCode } from '@/lib/utils';
 import { 
   KeyRound, 
   Search, 
@@ -111,7 +112,7 @@ const CodigosEntrega = () => {
                       <div className="flex-1 text-left">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="font-semibold text-foreground">
-                            Pedido #{order.id.slice(0, 8)}
+                            Pedido {formatOrderCode(order.id)}
                           </p>
                           <StatusBadge status={order.status} />
                         </div>

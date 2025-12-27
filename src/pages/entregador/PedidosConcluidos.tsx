@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatBrasiliaDateShort } from '@/types';
+import { formatOrderCode } from '@/lib/utils';
 
 const PedidosConcluidos = () => {
   const { user } = useAuth();
@@ -98,7 +99,7 @@ const OrderCard = ({
       <div className="flex items-center justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-1">
-            <span className="font-mono font-semibold">Pedido #{order.id.slice(0, 8)}</span>
+            <span className="font-mono font-semibold">Pedido {formatOrderCode(order.id)}</span>
             <StatusBadge status={order.status} size="sm" />
           </div>
           <p className="text-sm text-muted-foreground">
