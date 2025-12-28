@@ -26,6 +26,7 @@ import {
   MessageCircle,
   Bell,
   AlertTriangle,
+  FileText,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -98,6 +99,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         { label: 'Novo Pedido', icon: Plus, path: '/novo-pedido' },
         { label: 'Meus Pedidos', icon: Package, path: '/meus-pedidos' },
         { label: 'Códigos', icon: KeyRound, path: '/codigos-entrega' },
+        { label: 'Relatórios', icon: FileText, path: '/relatorios' },
       ];
     }
 
@@ -106,6 +108,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         ...baseItems,
         { label: 'Disponíveis', icon: Truck, path: '/pedidos-disponiveis' },
         { label: 'Meus Pedidos', icon: Package, path: '/meus-pedidos' },
+        { label: 'Relatórios', icon: FileText, path: '/relatorios' },
         { label: 'SOS', icon: AlertTriangle, path: '/sos', isEmergency: true },
       ];
     }
