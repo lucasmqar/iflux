@@ -71,7 +71,7 @@ export const exportConsolidatedToExcel = (
   driverName: string,
   period: string,
   groups: Array<{
-    companyName: string;
+    name: string;
     orders: Array<{
       id: string;
       date: string;
@@ -95,7 +95,7 @@ export const exportConsolidatedToExcel = (
   groups.forEach((group, index) => {
     worksheetData.push(
       [],
-      [`EMPRESA: ${group.companyName}`],
+      [`${group.name}`],
       ['Data', 'ID do Pedido', 'Endereço de Entrega', 'Valor'],
     );
 
@@ -108,7 +108,7 @@ export const exportConsolidatedToExcel = (
       ]);
     });
 
-    worksheetData.push(['', '', `Subtotal ${group.companyName}:`, formatCurrency(group.totalValue)]);
+    worksheetData.push(['', '', `Subtotal:`, formatCurrency(group.totalValue)]);
     grandTotal += group.totalValue;
   });
 

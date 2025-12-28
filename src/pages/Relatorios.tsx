@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { AppLayout } from '@/components/AppLayout';
 import { useAuth } from '@/contexts/AuthContext';
-import { FileText, History, Download } from 'lucide-react';
+import { FileText, History, Download, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ReportSummaryCards } from '@/components/reports/ReportSummaryCards';
@@ -10,6 +10,7 @@ import { ReportStatusTabs } from '@/components/reports/ReportStatusTabs';
 import { CompanyReportCard } from '@/components/reports/CompanyReportCard';
 import { DriverReportCard } from '@/components/reports/DriverReportCard';
 import { PaymentHistoryList } from '@/components/reports/PaymentHistoryList';
+import { generateConsolidatedReportPDF } from '@/components/reports/ReportPDF';
 import { 
   useDriverReportByCompany, 
   useCompanyReportByDriver,
@@ -26,6 +27,7 @@ const Relatorios = () => {
   const [selectedMonth, setSelectedMonth] = useState(getPaymentMonth());
   const [statusFilter, setStatusFilter] = useState<ReportStatus | 'all'>('all');
   const [mainTab, setMainTab] = useState<'reports' | 'history'>('reports');
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
   
   const isDriver = user?.role === 'driver';
   const isCompany = user?.role === 'company';
@@ -60,15 +62,11 @@ const Relatorios = () => {
     };
   }, [driverReports]);
   
-  // Export all reports
-  const handleExportAll = () => {
-    if (!reports || reports.length === 0) {
-      toast.error('Nenhum relatório para exportar');
-      return;
-    }
-    
-    const groups = reports.map((r: any) => ({
-      companyName: isDriver ? r.companyName : r.driverName,
+  // Get formatted report groups
+  const getReportGroups = () => {
+    if (!reports) return [];
+    return reports.map((r: any) => ({
+      name: isDriver ? r.companyName : r.driverName,
       orders: r.orders.map((order: any) => ({
         id: order.id,
         date: formatDate(order.completed_at || order.created_at),
@@ -77,6 +75,15 @@ const Relatorios = () => {
       })),
       totalValue: r.totalValue,
     }));
+  };
+  
+  // Export all reports as Excel
+  const handleExportAllExcel = () => {
+    const groups = getReportGroups();
+    if (groups.length === 0) {
+      toast.error('Nenhum relatório para exportar');
+      return;
+    }
     
     exportConsolidatedToExcel(
       user?.name || 'Usuário',
@@ -85,7 +92,37 @@ const Relatorios = () => {
       `relatorio_consolidado_${selectedMonth}`
     );
     
-    toast.success('Relatório consolidado exportado com sucesso!');
+    toast.success('Relatório Excel consolidado exportado!');
+  };
+  
+  // Export all reports as PDF
+  const handleExportAllPDF = async () => {
+    const groups = getReportGroups();
+    if (groups.length === 0) {
+      toast.error('Nenhum relatório para exportar');
+      return;
+    }
+    
+    setIsExportingPDF(true);
+    try {
+      const grandTotal = groups.reduce((sum, g) => sum + g.totalValue, 0);
+      
+      await generateConsolidatedReportPDF({
+        userName: user?.name || 'Usuário',
+        userRole: isDriver ? 'driver' : 'company',
+        period: getMonthName(selectedMonth),
+        generatedAt: new Date().toLocaleDateString('pt-BR'),
+        groups,
+        grandTotal,
+      }, `relatorio_consolidado_${selectedMonth}`);
+      
+      toast.success('Relatório PDF consolidado exportado!');
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      toast.error('Erro ao gerar PDF. Tente novamente.');
+    } finally {
+      setIsExportingPDF(false);
+    }
   };
   
   if (!user) return null;
@@ -144,12 +181,24 @@ const Relatorios = () => {
               />
             )}
             
-            {/* Export All Button */}
+            {/* Export All Buttons */}
             {reports && reports.length > 0 && (
-              <div className="flex justify-end">
-                <Button variant="outline" onClick={handleExportAll}>
+              <div className="flex justify-end gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={handleExportAllPDF}
+                  disabled={isExportingPDF}
+                >
+                  {isExportingPDF ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <FileText className="h-4 w-4" />
+                  )}
+                  Exportar PDF
+                </Button>
+                <Button variant="outline" onClick={handleExportAllExcel}>
                   <Download className="h-4 w-4" />
-                  Exportar Tudo (Excel)
+                  Exportar Excel
                 </Button>
               </div>
             )}

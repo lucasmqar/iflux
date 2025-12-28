@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { Building2, FileText, FileSpreadsheet, Check, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { StatusIndicator } from './StatusIndicator';
-import { useMarkCompanyAsPaid, getPaymentMonth } from '@/hooks/useReports';
+import { useMarkCompanyAsPaid } from '@/hooks/useReports';
 import { exportToExcel, formatDate, formatCurrency, getMonthName } from '@/lib/reportExport';
+import { generateReportPDF } from './ReportPDF';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import type { CompanyReportGroup } from '@/hooks/useReports';
@@ -27,32 +28,47 @@ export const CompanyReportCard = ({ report, selectedMonth }: CompanyReportCardPr
   const { user } = useAuth();
   const [showOrders, setShowOrders] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
   const markAsPaid = useMarkCompanyAsPaid();
   
+  const getOrdersData = () => report.orders.map(order => ({
+    id: order.id,
+    date: formatDate(order.completed_at || order.created_at),
+    dropoffAddress: order.order_deliveries?.[0]?.dropoff_address || 'N/A',
+    value: Number(order.total_value),
+  }));
+  
   const handleExportExcel = () => {
-    const orders = report.orders.map(order => ({
-      id: order.id,
-      date: formatDate(order.completed_at || order.created_at),
-      dropoffAddress: order.order_deliveries?.[0]?.dropoff_address || 'N/A',
-      value: Number(order.total_value),
-    }));
-    
     exportToExcel({
       companyName: report.companyName,
       driverName: user?.name || 'Entregador',
       period: getMonthName(selectedMonth),
-      orders,
+      orders: getOrdersData(),
       totalValue: report.totalValue,
     }, `relatorio_${report.companyName.replace(/\s+/g, '_')}_${selectedMonth}`);
     
     toast.success('Relatório Excel exportado com sucesso!');
   };
   
-  const handleExportPDF = () => {
-    // For now, export as Excel since PDF requires more setup
-    // TODO: Implement proper PDF export
-    handleExportExcel();
-    toast.info('Exportado como Excel. PDF em breve!');
+  const handleExportPDF = async () => {
+    setIsExportingPDF(true);
+    try {
+      await generateReportPDF({
+        companyName: report.companyName,
+        driverName: user?.name || 'Entregador',
+        period: getMonthName(selectedMonth),
+        generatedAt: new Date().toLocaleDateString('pt-BR'),
+        orders: getOrdersData(),
+        totalValue: report.totalValue,
+        isCompanyReport: false,
+      }, `relatorio_${report.companyName.replace(/\s+/g, '_')}_${selectedMonth}`);
+      toast.success('Relatório PDF exportado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      toast.error('Erro ao gerar PDF. Tente novamente.');
+    } finally {
+      setIsExportingPDF(false);
+    }
   };
   
   const handleMarkAsPaid = async () => {
@@ -102,9 +118,14 @@ export const CompanyReportCard = ({ report, selectedMonth }: CompanyReportCardPr
               variant="outline"
               size="sm"
               onClick={handleExportPDF}
+              disabled={isExportingPDF}
               className="flex-1 min-w-[120px]"
             >
-              <FileText className="h-4 w-4" />
+              {isExportingPDF ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <FileText className="h-4 w-4" />
+              )}
               PDF
             </Button>
             <Button

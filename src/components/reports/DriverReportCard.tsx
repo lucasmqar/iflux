@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { User, FileText, FileSpreadsheet, ChevronDown, ChevronUp } from 'lucide-react';
+import { User, FileText, FileSpreadsheet, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { exportToExcel, formatDate, formatCurrency, getMonthName } from '@/lib/reportExport';
+import { generateReportPDF } from './ReportPDF';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import type { DriverReportGroup } from '@/hooks/useReports';
@@ -15,29 +16,46 @@ interface DriverReportCardProps {
 export const DriverReportCard = ({ report, selectedMonth, companyName }: DriverReportCardProps) => {
   const { user } = useAuth();
   const [showOrders, setShowOrders] = useState(false);
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
+  
+  const getOrdersData = () => report.orders.map(order => ({
+    id: order.id,
+    date: formatDate(order.completed_at || order.created_at),
+    dropoffAddress: order.order_deliveries?.[0]?.dropoff_address || 'N/A',
+    value: Number(order.total_value),
+  }));
   
   const handleExportExcel = () => {
-    const orders = report.orders.map(order => ({
-      id: order.id,
-      date: formatDate(order.completed_at || order.created_at),
-      dropoffAddress: order.order_deliveries?.[0]?.dropoff_address || 'N/A',
-      value: Number(order.total_value),
-    }));
-    
     exportToExcel({
       companyName,
       driverName: report.driverName,
       period: getMonthName(selectedMonth),
-      orders,
+      orders: getOrdersData(),
       totalValue: report.totalValue,
     }, `relatorio_${report.driverName.replace(/\s+/g, '_')}_${selectedMonth}`);
     
     toast.success('Relatório Excel exportado com sucesso!');
   };
   
-  const handleExportPDF = () => {
-    handleExportExcel();
-    toast.info('Exportado como Excel. PDF em breve!');
+  const handleExportPDF = async () => {
+    setIsExportingPDF(true);
+    try {
+      await generateReportPDF({
+        companyName,
+        driverName: report.driverName,
+        period: getMonthName(selectedMonth),
+        generatedAt: new Date().toLocaleDateString('pt-BR'),
+        orders: getOrdersData(),
+        totalValue: report.totalValue,
+        isCompanyReport: true,
+      }, `relatorio_${report.driverName.replace(/\s+/g, '_')}_${selectedMonth}`);
+      toast.success('Relatório PDF exportado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      toast.error('Erro ao gerar PDF. Tente novamente.');
+    } finally {
+      setIsExportingPDF(false);
+    }
   };
   
   return (
@@ -70,9 +88,14 @@ export const DriverReportCard = ({ report, selectedMonth, companyName }: DriverR
             variant="outline"
             size="sm"
             onClick={handleExportPDF}
+            disabled={isExportingPDF}
             className="flex-1 min-w-[120px]"
           >
-            <FileText className="h-4 w-4" />
+            {isExportingPDF ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <FileText className="h-4 w-4" />
+            )}
             PDF
           </Button>
           <Button
