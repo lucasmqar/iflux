@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { useTheme } from 'next-themes';
 import logoClaro from '@/assets/logo_tclaro.png';
 import logoEscuro from '@/assets/logo_tescuro.png';
-import { MarketingBanner } from '@/components/banners';
+
 import { getSupportWhatsAppUrl, openWhatsApp } from '@/lib/whatsapp';
 import { useRealtimeUpdates } from '@/hooks/useRealtimeUpdates';
 import { useUserAlerts } from '@/hooks/useAdminAlerts';
@@ -150,9 +150,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Marketing banner - top fixed */}
-      <MarketingBanner collapsible />
-
       {/* Admin alerts */}
       {alerts.length > 0 && (
         <div className="bg-amber-100 border-b border-amber-200 px-4 py-3 dark:bg-amber-900/40 dark:border-amber-800">
