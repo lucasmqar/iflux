@@ -303,6 +303,44 @@ export type Database = {
           },
         ]
       }
+      order_payments: {
+        Row: {
+          company_user_id: string
+          created_at: string | null
+          driver_user_id: string
+          id: string
+          order_id: string
+          paid_at: string | null
+          payment_month: string
+        }
+        Insert: {
+          company_user_id: string
+          created_at?: string | null
+          driver_user_id: string
+          id?: string
+          order_id: string
+          paid_at?: string | null
+          payment_month: string
+        }
+        Update: {
+          company_user_id?: string
+          created_at?: string | null
+          driver_user_id?: string
+          id?: string
+          order_id?: string
+          paid_at?: string | null
+          payment_month?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           accepted_at: string | null
@@ -342,6 +380,39 @@ export type Database = {
           status?: Database["public"]["Enums"]["order_status"]
           total_value?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      payment_history: {
+        Row: {
+          company_user_id: string
+          created_at: string | null
+          driver_user_id: string
+          id: string
+          marked_at: string | null
+          payment_month: string
+          total_orders: number
+          total_value: number
+        }
+        Insert: {
+          company_user_id: string
+          created_at?: string | null
+          driver_user_id: string
+          id?: string
+          marked_at?: string | null
+          payment_month: string
+          total_orders: number
+          total_value: number
+        }
+        Update: {
+          company_user_id?: string
+          created_at?: string | null
+          driver_user_id?: string
+          id?: string
+          marked_at?: string | null
+          payment_month?: string
+          total_orders?: number
+          total_value?: number
         }
         Relationships: []
       }
@@ -433,6 +504,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_overdue_reports: { Args: never; Returns: undefined }
       generate_delivery_code: { Args: never; Returns: string }
       get_user_role: {
         Args: { _user_id: string }

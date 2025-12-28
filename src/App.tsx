@@ -39,6 +39,9 @@ import GerenciarPedidos from "./pages/admin/GerenciarPedidos";
 import GerenciarCreditos from "./pages/admin/GerenciarCreditos";
 import GerenciarAlertas from "./pages/admin/GerenciarAlertas";
 
+// Shared pages
+import Relatorios from "./pages/Relatorios";
+
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -80,6 +83,7 @@ const App = () => (
             <Route path="/pedidos-finalizados" element={<PedidosFinalizados />} />
             <Route path="/entregador/concluidos" element={<EntregadorPedidosConcluidos />} />
             <Route path="/sos" element={<SOS />} />
+            <Route path="/relatorios" element={<Relatorios />} />
 
             {/* Admin routes */}
             <Route path="/admin/usuarios" element={<GerenciarUsuarios />} />
