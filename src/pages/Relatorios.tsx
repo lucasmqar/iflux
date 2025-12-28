@@ -183,23 +183,31 @@ const Relatorios = () => {
             
             {/* Export All Buttons */}
             {reports && reports.length > 0 && (
-              <div className="flex justify-end gap-2">
-                <Button 
-                  variant="outline" 
-                  onClick={handleExportAllPDF}
-                  disabled={isExportingPDF}
-                >
-                  {isExportingPDF ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <FileText className="h-4 w-4" />
-                  )}
-                  Exportar PDF
-                </Button>
-                <Button variant="outline" onClick={handleExportAllExcel}>
-                  <Download className="h-4 w-4" />
-                  Exportar Excel
-                </Button>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                {selectedMonth === getPaymentMonth() && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                    <span>Relatório em andamento - pode ser atualizado até o fim do mês</span>
+                  </div>
+                )}
+                <div className="flex gap-2 sm:ml-auto">
+                  <Button 
+                    variant="outline" 
+                    onClick={handleExportAllPDF}
+                    disabled={isExportingPDF}
+                  >
+                    {isExportingPDF ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <FileText className="h-4 w-4" />
+                    )}
+                    {selectedMonth === getPaymentMonth() ? 'Exportar PDF (Parcial)' : 'Exportar PDF'}
+                  </Button>
+                  <Button variant="outline" onClick={handleExportAllExcel}>
+                    <Download className="h-4 w-4" />
+                    {selectedMonth === getPaymentMonth() ? 'Exportar Excel (Parcial)' : 'Exportar Excel'}
+                  </Button>
+                </div>
               </div>
             )}
             
