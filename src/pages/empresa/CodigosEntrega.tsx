@@ -29,13 +29,13 @@ const CodigosEntrega = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [openOrders, setOpenOrders] = useState<string[]>([]);
 
-  const { data: orders, isLoading } = useOrders();
+  const { data: orders, isLoading } = useOrders(user?.id);
 
   if (!user || user.role !== 'company') return null;
 
-  // Filter orders that have delivery codes (status !== pending)
+  // Filter orders that have delivery codes (status !== pending) - include in-progress orders (accepted, driver_completed)
   const ordersWithCodes = orders?.filter(
-    order => order.status !== 'pending' && order.status !== 'cancelled'
+    order => order.status === 'accepted' || order.status === 'driver_completed' || order.status === 'completed'
   ) || [];
 
   // Search filter
