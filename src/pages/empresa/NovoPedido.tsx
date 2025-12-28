@@ -245,12 +245,12 @@ const NovoPedido = () => {
         <div className="card-static p-6 mb-6">
           <h1 className="text-2xl font-bold text-foreground mb-1">Novo Pedido</h1>
           <p className="text-muted-foreground text-sm mb-2">Adicione as entregas ao pedido</p>
-          <div className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-gray-100 border border-blue-200 dark:border-gray-300 rounded-lg">
             <div className="flex-1">
-              <p className="text-sm font-semibold text-foreground">
+              <p className="text-sm font-semibold text-foreground dark:text-gray-900">
                 {deliveries.length} entrega{deliveries.length > 1 ? 's' : ''} no pedido
               </p>
-              <p className="text-xs text-blue-600">Valor total: R$ {totalValue.toFixed(2)}</p>
+              <p className="text-xs text-blue-600 dark:text-blue-700">Valor total: R$ {totalValue.toFixed(2)}</p>
             </div>
           </div>
         </div>
@@ -306,13 +306,13 @@ const NovoPedido = () => {
                 <CollapsibleContent>
                   <div className="p-6 pt-0 space-y-4 border-t border-border">
                     {/* Customer Data - Highlighted Section */}
-                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                      <p className="text-xs font-bold text-blue-900 uppercase tracking-wide mb-3">
+                    <div className="p-4 bg-blue-50 dark:bg-gray-100 rounded-lg border border-blue-200 dark:border-gray-300">
+                      <p className="text-xs font-bold text-blue-900 dark:text-gray-900 uppercase tracking-wide mb-3">
                         Dados do Cliente Final
                       </p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                          <Label className="text-xs font-semibold text-foreground mb-1 flex items-center gap-1">
+                          <Label className="text-xs font-semibold text-foreground dark:text-gray-800 mb-1 flex items-center gap-1">
                             <User className="h-3 w-3" />
                             Nome do Cliente *
                           </Label>
@@ -325,7 +325,7 @@ const NovoPedido = () => {
                           />
                         </div>
                         <div>
-                          <Label className="text-xs font-semibold text-foreground mb-1 flex items-center gap-1">
+                          <Label className="text-xs font-semibold text-foreground dark:text-gray-800 mb-1 flex items-center gap-1">
                             <Phone className="h-3 w-3" />
                             Telefone do Cliente *
                           </Label>
@@ -338,7 +338,7 @@ const NovoPedido = () => {
                           />
                         </div>
                       </div>
-                      <p className="text-xs text-blue-700 mt-2">
+                      <p className="text-xs text-blue-700 dark:text-gray-700 mt-2">
                         ℹ️ O código de validação será enviado automaticamente para este telefone
                       </p>
                     </div>
@@ -350,9 +350,9 @@ const NovoPedido = () => {
                       </Label>
                       {!useCustomPickup[delivery.id] && companyProfile?.address_default ? (
                         <div className="space-y-2">
-                          <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                            <p className="text-sm text-foreground font-semibold">{companyProfile.address_default}</p>
-                            <p className="text-xs text-blue-600 mt-1">Endereço padrão</p>
+                          <div className="p-3 bg-blue-50 dark:bg-gray-100 rounded-lg border border-blue-200 dark:border-gray-300">
+                            <p className="text-sm text-foreground dark:text-gray-900 font-semibold">{companyProfile.address_default}</p>
+                            <p className="text-xs text-blue-600 dark:text-blue-700 mt-1">Endereço padrão</p>
                           </div>
                           <button
                             type="button"
