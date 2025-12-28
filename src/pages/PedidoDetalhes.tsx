@@ -356,6 +356,24 @@ const PedidoDetalhes = () => {
                         </div>
                       )}
 
+                      {/* Customer info for driver */}
+                      {user.role === 'driver' && (delivery.customer_name || delivery.customer_phone) && (
+                        <div className="p-3 rounded-lg bg-blue-50 border border-blue-200 dark:bg-blue-900/30 dark:border-blue-800">
+                          <div className="flex items-center gap-2 text-sm">
+                            <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                            <span className="font-medium text-blue-900 dark:text-blue-300">
+                              {delivery.customer_name || 'Cliente'}
+                            </span>
+                            {delivery.customer_phone && (
+                              <>
+                                <Phone className="h-4 w-4 text-blue-600 dark:text-blue-400 ml-2" />
+                                <span className="text-blue-700 dark:text-blue-400">{delivery.customer_phone}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
                       {/* Customer info for company */}
                       {user.role === 'company' && (delivery.customer_name || delivery.customer_phone) && (
                         <div className="p-3 rounded-lg bg-blue-50 border border-blue-200 dark:bg-blue-900/30 dark:border-blue-800">

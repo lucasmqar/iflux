@@ -116,7 +116,7 @@ export const ReportSummaryCards = ({ summary, role, isLoading }: ReportSummaryCa
           {!isLoading && formatCurrency(summary.estimatedSavings || 0)}
         </p>
         <p className="text-xs text-muted-foreground mt-1">
-          ~10% de economia vs. apps tradicionais
+          ~15-30% de economia vs. apps tradicionais
         </p>
       </div>
 
