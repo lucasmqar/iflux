@@ -175,12 +175,12 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         {/* Sidebar */}
         <aside
           className={cn(
-            'fixed lg:sticky top-0 left-0 z-50 h-screen w-64 bg-card border-r border-border flex flex-col transition-transform duration-300',
+            'fixed lg:sticky top-0 left-0 z-50 h-dvh w-64 bg-card border-r border-border flex flex-col transition-transform duration-300',
             sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
           )}
         >
-          {/* Header */}
-          <div className="p-4 border-b border-border">
+          {/* Header - Fixed at top */}
+          <div className="shrink-0 p-4 border-b border-border">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <img src={currentLogo} alt="FLUX" className="w-10 h-10 object-contain" />
@@ -197,8 +197,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             </div>
           </div>
 
-          {/* User info */}
-          <div className="p-4 border-b border-border">
+          {/* User info - Fixed below header */}
+          <div className="shrink-0 p-4 border-b border-border">
             <p className="font-medium text-foreground truncate">{user.name}</p>
             <p className="text-xs text-muted-foreground">{roleLabels[user.role]}</p>
             <div className="mt-2">
@@ -206,8 +206,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 className={cn(
                   'inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full',
                   hasCredits
-                    ? 'bg-emerald-100 text-emerald-800'
-                    : 'bg-red-100 text-red-800'
+                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
+                    : 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300'
                 )}
               >
                 <span
@@ -221,8 +221,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             </div>
           </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+          {/* Navigation - Scrollable middle section */}
+          <nav className="flex-1 min-h-0 p-3 space-y-1 overflow-y-auto">
             {navItems.map((item: any) => {
               const isActive = location.pathname === item.path;
               const disabled = isItemDisabled(item.path);
@@ -237,7 +237,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                     isEmergency
                       ? isActive
                         ? 'bg-red-600 text-white'
-                        : 'text-red-600 hover:text-red-700 hover:bg-red-50 border border-red-200'
+                        : 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/30 border border-red-200 dark:border-red-800'
                       : isActive
                         ? 'bg-primary text-primary-foreground'
                         : 'text-muted-foreground hover:text-foreground hover:bg-secondary',
@@ -252,48 +252,50 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 </button>
               );
             })}
+
+            {/* Bottom navigation items - inside scrollable area but above logout */}
+            <div className="pt-3 mt-3 border-t border-border space-y-1">
+              {bottomItems.map((item) => {
+                const isActive = location.pathname === item.path;
+
+                return (
+                  <button
+                    key={item.path}
+                    onClick={() => handleNavClick(item.path)}
+                    className={cn(
+                      'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                      isActive
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
+                    )}
+                  >
+                    <item.icon className="h-5 w-5" />
+                    {item.label}
+                    {item.badge && item.badge > 0 && (
+                      <span className="ml-auto bg-destructive text-destructive-foreground text-xs px-1.5 py-0.5 rounded-full">
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+
+              {/* WhatsApp support */}
+              <button
+                onClick={handleSupportClick}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              >
+                <MessageCircle className="h-5 w-5" />
+                Suporte
+              </button>
+            </div>
           </nav>
 
-          {/* Bottom items */}
-          <div className="p-3 border-t border-border space-y-1">
-            {bottomItems.map((item) => {
-              const isActive = location.pathname === item.path;
-
-              return (
-                <button
-                  key={item.path}
-                  onClick={() => handleNavClick(item.path)}
-                  className={cn(
-                    'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                    isActive
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
-                  )}
-                >
-                  <item.icon className="h-5 w-5" />
-                  {item.label}
-                  {item.badge && item.badge > 0 && (
-                    <span className="ml-auto bg-destructive text-destructive-foreground text-xs px-1.5 py-0.5 rounded-full">
-                      {item.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-
-            {/* WhatsApp support */}
-            <button
-              onClick={handleSupportClick}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-            >
-              <MessageCircle className="h-5 w-5" />
-              Suporte
-            </button>
-
-            {/* Logout */}
+          {/* Logout - Fixed at bottom */}
+          <div className="shrink-0 p-3 border-t border-border">
             <button
               onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
             >
               <LogOut className="h-5 w-5" />
               Sair
