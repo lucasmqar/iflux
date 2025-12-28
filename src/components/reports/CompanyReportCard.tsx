@@ -86,26 +86,26 @@ export const CompanyReportCard = ({ report, selectedMonth }: CompanyReportCardPr
   
   return (
     <>
-      <div className="card-static overflow-hidden">
-        <div className="p-4">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-secondary">
-                <Building2 className="h-5 w-5 text-foreground" />
+      <div className="card-static overflow-hidden mx-1">
+        <div className="p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="p-2 sm:p-2.5 rounded-xl bg-secondary shrink-0">
+                <Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-foreground" />
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="font-semibold text-foreground">{report.companyName}</h3>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="font-semibold text-foreground text-sm sm:text-base truncate max-w-[150px] sm:max-w-none">{report.companyName}</h3>
                   <StatusIndicator status={report.status} showLabel />
                 </div>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   {report.orderCount} pedido(s) pendente(s)
                 </p>
               </div>
             </div>
             
-            <div className="text-right">
-              <p className="text-xl font-bold text-foreground">
+            <div className="text-left sm:text-right shrink-0">
+              <p className="text-lg sm:text-xl font-bold text-foreground">
                 {formatCurrency(report.totalValue)}
               </p>
               <p className="text-xs text-muted-foreground">A receber</p>
@@ -113,18 +113,18 @@ export const CompanyReportCard = ({ report, selectedMonth }: CompanyReportCardPr
           </div>
           
           {/* Action buttons */}
-          <div className="flex flex-wrap gap-2 mt-4">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 mt-3 sm:mt-4">
             <Button
               variant="outline"
               size="sm"
               onClick={handleExportPDF}
               disabled={isExportingPDF}
-              className="flex-1 min-w-[120px]"
+              className="text-xs sm:text-sm sm:flex-1 sm:min-w-[100px]"
             >
               {isExportingPDF ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
               ) : (
-                <FileText className="h-4 w-4" />
+                <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
               )}
               PDF
             </Button>
@@ -132,23 +132,23 @@ export const CompanyReportCard = ({ report, selectedMonth }: CompanyReportCardPr
               variant="outline"
               size="sm"
               onClick={handleExportExcel}
-              className="flex-1 min-w-[120px]"
+              className="text-xs sm:text-sm sm:flex-1 sm:min-w-[100px]"
             >
-              <FileSpreadsheet className="h-4 w-4" />
+              <FileSpreadsheet className="h-3 w-3 sm:h-4 sm:w-4" />
               Excel
             </Button>
             <Button
               size="sm"
               onClick={() => setShowConfirmDialog(true)}
               disabled={markAsPaid.isPending || report.status === 'paid'}
-              className="flex-1 min-w-[140px] bg-emerald-600 hover:bg-emerald-700"
+              className="col-span-2 text-xs sm:text-sm sm:flex-1 sm:min-w-[120px] bg-emerald-600 hover:bg-emerald-700"
             >
               {markAsPaid.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
               ) : (
-                <Check className="h-4 w-4" />
+                <Check className="h-3 w-3 sm:h-4 sm:w-4" />
               )}
-              Marcar como Pago
+              Marcar Pago
             </Button>
           </div>
           
