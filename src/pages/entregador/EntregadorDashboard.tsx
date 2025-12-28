@@ -121,7 +121,7 @@ const EntregadorDashboard = () => {
 
   return (
     <AppLayout>
-      <div className="space-y-8 overflow-x-hidden">
+      <div className="space-y-8 overflow-x-hidden pb-8">
         {/* Expired credit banner */}
         <ExpiredCreditBanner />
 

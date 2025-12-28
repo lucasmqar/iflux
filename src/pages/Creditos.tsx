@@ -2,9 +2,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { AppLayout } from '@/components/AppLayout';
 import { CreditsBadge } from '@/components/CreditsBadge';
 import { Button } from '@/components/ui/button';
-import { getAddCreditsWhatsAppUrl, openWhatsApp } from '@/lib/whatsapp';
-import { MessageCircle, ArrowLeft, Clock, Gift } from 'lucide-react';
+import { ExternalLink, ArrowLeft, Clock, Gift, MessageCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+
+const IFLUX_URL = 'https://iflux.space';
 
 const Creditos = () => {
   const { user } = useAuth();
@@ -13,12 +14,12 @@ const Creditos = () => {
   if (!user) return null;
 
   const handleAddCredits = () => {
-    openWhatsApp(getAddCreditsWhatsAppUrl(user));
+    window.open(IFLUX_URL, '_blank', 'noopener,noreferrer');
   };
 
   return (
     <AppLayout>
-      <div className="max-w-2xl mx-auto space-y-6 overflow-x-hidden">
+      <div className="max-w-2xl mx-auto space-y-6 overflow-x-hidden pb-8">
         {/* Header */}
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}>
@@ -39,8 +40,8 @@ const Creditos = () => {
         {/* How it works */}
         <div className="card-static p-6 animate-fade-in" style={{ animationDelay: '50ms' }}>
           <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 rounded-lg bg-blue-100">
-              <Clock className="h-5 w-5 text-blue-800" />
+            <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/40">
+              <Clock className="h-5 w-5 text-blue-800 dark:text-blue-400" />
             </div>
             <h3 className="text-lg font-semibold text-foreground">Como funciona?</h3>
           </div>
@@ -54,21 +55,21 @@ const Creditos = () => {
         {/* Add credits */}
         <div className="card-static p-6 animate-fade-in" style={{ animationDelay: '100ms' }}>
           <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 rounded-lg bg-emerald-100">
-              <Gift className="h-5 w-5 text-emerald-800" />
+            <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/40">
+              <Gift className="h-5 w-5 text-emerald-800 dark:text-emerald-400" />
             </div>
             <h3 className="text-lg font-semibold text-foreground">Adicionar Créditos</h3>
           </div>
           <p className="text-sm text-muted-foreground mb-4">
-            Entre em contato via WhatsApp para adicionar créditos à sua conta.
+            Acesse nosso site para adicionar créditos à sua conta.
           </p>
           <Button
             size="lg"
-            className="w-full bg-[#25D366] hover:bg-[#20BD5A] text-white"
+            className="w-full"
             onClick={handleAddCredits}
           >
-            <MessageCircle className="h-5 w-5" />
-            Comprar Créditos via WhatsApp
+            <ExternalLink className="h-5 w-5" />
+            Comprar Créditos
           </Button>
         </div>
 
@@ -82,15 +83,15 @@ const Creditos = () => {
               <h3 className="font-semibold text-foreground">Suporte</h3>
             </div>
             <p className="text-sm text-muted-foreground mb-4">
-              Dúvidas sobre créditos? Fale com nosso suporte.
+              Dúvidas sobre créditos? Acesse nosso site.
             </p>
             <Button
               variant="outline"
               className="w-full"
               onClick={handleAddCredits}
             >
-              <MessageCircle className="h-4 w-4" />
-              WhatsApp
+              <ExternalLink className="h-4 w-4" />
+              Acessar Site
             </Button>
           </div>
           <div className="card-static p-5">
