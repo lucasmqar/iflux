@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { User, FileText, FileSpreadsheet, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { User, FileText, FileSpreadsheet, ChevronDown, ChevronUp, Loader2, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { exportToExcel, formatDate, formatCurrency, getMonthName } from '@/lib/reportExport';
 import { generateReportPDF } from './ReportPDF';
@@ -59,42 +59,63 @@ export const DriverReportCard = ({ report, selectedMonth, companyName }: DriverR
   };
   
   return (
-    <div className="card-static overflow-hidden">
-      <div className="p-4">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-secondary">
-              <User className="h-5 w-5 text-foreground" />
+    <div className="card-static overflow-hidden mx-1">
+      <div className="p-3 sm:p-4">
+        {/* Header with driver info and value */}
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="p-2 sm:p-2.5 rounded-xl bg-secondary shrink-0">
+              <User className="h-4 w-4 sm:h-5 sm:w-5 text-foreground" />
             </div>
-            <div>
-              <h3 className="font-semibold text-foreground">{report.driverName}</h3>
-              <p className="text-sm text-muted-foreground">
+            <div className="min-w-0 flex-1">
+              <h3 className="font-semibold text-foreground text-sm sm:text-base truncate">
+                {report.driverName}
+              </h3>
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 {report.orderCount} entrega(s) realizada(s)
               </p>
             </div>
           </div>
           
-          <div className="text-right">
-            <p className="text-xl font-bold text-foreground">
-              {formatCurrency(report.totalValue)}
-            </p>
-            <p className="text-xs text-muted-foreground">Total pago</p>
+          <div className="flex items-center justify-between sm:flex-col sm:items-end gap-2">
+            <div className="text-left sm:text-right">
+              <p className="text-lg sm:text-xl font-bold text-foreground">
+                {formatCurrency(report.totalValue)}
+              </p>
+              <p className="text-xs text-muted-foreground">Total pago</p>
+            </div>
+            
+            {/* Quick download button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleExportPDF}
+              disabled={isExportingPDF}
+              className="shrink-0 h-8 w-8 p-0 sm:hidden"
+              title="Baixar PDF"
+            >
+              {isExportingPDF ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+            </Button>
           </div>
         </div>
         
         {/* Action buttons */}
-        <div className="flex flex-wrap gap-2 mt-4">
+        <div className="grid grid-cols-2 gap-2 mt-3 sm:mt-4">
           <Button
             variant="outline"
             size="sm"
             onClick={handleExportPDF}
             disabled={isExportingPDF}
-            className="flex-1 min-w-[120px]"
+            className="text-xs sm:text-sm"
           >
             {isExportingPDF ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
             ) : (
-              <FileText className="h-4 w-4" />
+              <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
             )}
             PDF
           </Button>
@@ -102,9 +123,9 @@ export const DriverReportCard = ({ report, selectedMonth, companyName }: DriverR
             variant="outline"
             size="sm"
             onClick={handleExportExcel}
-            className="flex-1 min-w-[120px]"
+            className="text-xs sm:text-sm"
           >
-            <FileSpreadsheet className="h-4 w-4" />
+            <FileSpreadsheet className="h-3 w-3 sm:h-4 sm:w-4" />
             Excel
           </Button>
         </div>
@@ -114,7 +135,7 @@ export const DriverReportCard = ({ report, selectedMonth, companyName }: DriverR
           variant="ghost"
           size="sm"
           onClick={() => setShowOrders(!showOrders)}
-          className="w-full mt-3"
+          className="w-full mt-3 text-xs sm:text-sm"
         >
           {showOrders ? (
             <>
@@ -141,11 +162,11 @@ export const DriverReportCard = ({ report, selectedMonth, companyName }: DriverR
                     <p className="text-xs text-muted-foreground">
                       {formatDate(order.completed_at || order.created_at)}
                     </p>
-                    <p className="text-sm text-foreground truncate">
+                    <p className="text-xs sm:text-sm text-foreground truncate">
                       {order.order_deliveries?.[0]?.dropoff_address || 'Endereço não disponível'}
                     </p>
                   </div>
-                  <p className="text-sm font-medium text-foreground shrink-0">
+                  <p className="text-xs sm:text-sm font-medium text-foreground shrink-0">
                     {formatCurrency(Number(order.total_value))}
                   </p>
                 </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Building2, FileText, FileSpreadsheet, Check, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Building2, FileText, FileSpreadsheet, Check, Loader2, ChevronDown, ChevronUp, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { StatusIndicator } from './StatusIndicator';
 import { useMarkCompanyAsPaid } from '@/hooks/useReports';
@@ -104,11 +104,29 @@ export const CompanyReportCard = ({ report, selectedMonth }: CompanyReportCardPr
               </div>
             </div>
             
-            <div className="text-left sm:text-right shrink-0">
-              <p className="text-lg sm:text-xl font-bold text-foreground">
-                {formatCurrency(report.totalValue)}
-              </p>
-              <p className="text-xs text-muted-foreground">A receber</p>
+            <div className="flex items-center justify-between sm:flex-col sm:items-end gap-2">
+              <div className="text-left sm:text-right">
+                <p className="text-lg sm:text-xl font-bold text-foreground">
+                  {formatCurrency(report.totalValue)}
+                </p>
+                <p className="text-xs text-muted-foreground">A receber</p>
+              </div>
+              
+              {/* Quick download button on mobile */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleExportPDF}
+                disabled={isExportingPDF}
+                className="shrink-0 h-8 w-8 p-0 sm:hidden"
+                title="Baixar PDF"
+              >
+                {isExportingPDF ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+              </Button>
             </div>
           </div>
           

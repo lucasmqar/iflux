@@ -91,13 +91,21 @@ export const useDriverReportByCompany = (month?: string) => {
         .from('orders')
         .select(`
           *,
-          order_deliveries(*),
-          company_profiles!orders_company_user_id_fkey(company_name)
+          order_deliveries(*)
         `)
         .eq('driver_user_id', user.id)
         .in('status', ['completed', 'driver_completed']);
       
       if (ordersError) throw ordersError;
+      
+      // Get company names separately since there's no FK relationship
+      const companyIds = [...new Set(orders?.map(o => o.company_user_id) || [])];
+      const { data: companyProfiles } = await supabase
+        .from('company_profiles')
+        .select('user_id, company_name')
+        .in('user_id', companyIds);
+      
+      const companyMap = new Map(companyProfiles?.map(c => [c.user_id, c.company_name]) || []);
       
       // Get paid orders
       const { data: paidOrders, error: paidError } = await supabase
@@ -114,7 +122,7 @@ export const useDriverReportByCompany = (month?: string) => {
       
       orders?.forEach(order => {
         const companyId = order.company_user_id;
-        const companyName = (order as any).company_profiles?.company_name || 'Empresa Desconhecida';
+        const companyName = companyMap.get(companyId) || 'Empresa Desconhecida';
         
         if (!groupedByCompany.has(companyId)) {
           groupedByCompany.set(companyId, {
@@ -170,13 +178,21 @@ export const useCompanyReportByDriver = (month?: string) => {
         .from('orders')
         .select(`
           *,
-          order_deliveries(*),
-          profiles!orders_driver_user_id_fkey(name)
+          order_deliveries(*)
         `)
         .eq('company_user_id', user.id)
         .in('status', ['completed', 'driver_completed']);
       
       if (ordersError) throw ordersError;
+      
+      // Get driver names separately
+      const driverIds = [...new Set(orders?.map(o => o.driver_user_id).filter(Boolean) || [])];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, name')
+        .in('id', driverIds);
+      
+      const driverMap = new Map(profiles?.map(p => [p.id, p.name]) || []);
       
       // Group orders by driver
       const groupedByDriver = new Map<string, DriverReportGroup>();
@@ -185,7 +201,7 @@ export const useCompanyReportByDriver = (month?: string) => {
         if (!order.driver_user_id) return;
         
         const driverId = order.driver_user_id;
-        const driverName = (order as any).profiles?.name || 'Entregador Desconhecido';
+        const driverName = driverMap.get(driverId) || 'Entregador Desconhecido';
         
         if (!groupedByDriver.has(driverId)) {
           groupedByDriver.set(driverId, {
