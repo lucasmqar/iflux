@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useDriverOrders } from '@/hooks/useOrders';
+import { useCompanyProfile } from '@/hooks/useCompanyProfiles';
+import { useProfile } from '@/hooks/useProfile';
 import { formatBrasiliaDateShort, WHATSAPP_NUMBER } from '@/types';
 import { toast } from 'sonner';
 import { 
@@ -35,6 +37,11 @@ const SOS = () => {
     o.status === 'accepted' || o.status === 'driver_completed'
   );
 
+  // Fetch company profile for selected order
+  const selectedOrder = activeOrders.find(o => o.id === selectedOrderId);
+  const { data: companyProfile } = useCompanyProfile(selectedOrder?.company_user_id);
+  const { data: companyUserProfile } = useProfile(selectedOrder?.company_user_id);
+
   const handleSendSOS = () => {
     if (!selectedOrderId) {
       toast.error('Selecione um pedido');
@@ -47,19 +54,20 @@ const SOS = () => {
 
     setIsSending(true);
 
-    const selectedOrder = activeOrders.find(o => o.id === selectedOrderId);
     const orderCode = selectedOrder ? formatOrderCode(selectedOrder.id) : '';
-
+    const companyPhone = companyUserProfile?.phone?.replace(/\D/g, '');
+    
     const message = encodeURIComponent(
       `🆘 *SOS - Problema na Entrega*\n\n` +
       `*Entregador:* ${user.name}\n` +
-      `*ID do Usuário:* ${user.id}\n` +
       `*Pedido:* ${orderCode}\n\n` +
       `*Descrição do Problema:*\n${description}\n\n` +
       `---\n_Enviado via app FLUX_`
     );
 
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, '_blank');
+    // Redirect to company's WhatsApp if available, otherwise use FLUX support
+    const targetPhone = companyPhone ? `55${companyPhone}` : WHATSAPP_NUMBER;
+    window.open(`https://wa.me/${targetPhone}?text=${message}`, '_blank');
     
     toast.success('WhatsApp aberto para envio do SOS');
     setIsSending(false);

@@ -1,7 +1,9 @@
+import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { PACKAGE_TYPE_LABELS, PackageType } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   CheckCircle2, 
   ArrowRight, 
@@ -29,6 +31,34 @@ const PedidoCriado = () => {
   const navigate = useNavigate();
   
   const state = location.state as OrderSuccessState | null;
+
+  // Subscribe to real-time order updates
+  useEffect(() => {
+    if (!state?.orderId) return;
+
+    const channel = supabase
+      .channel(`order-created-${state.orderId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'orders',
+          filter: `id=eq.${state.orderId}`,
+        },
+        (payload) => {
+          // If order was accepted by a driver, redirect to details
+          if (payload.new.status === 'accepted') {
+            navigate(`/pedido/${state.orderId}`, { replace: true });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [state?.orderId, navigate]);
 
   if (!state) {
     navigate('/dashboard');

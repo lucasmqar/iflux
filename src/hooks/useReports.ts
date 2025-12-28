@@ -285,9 +285,11 @@ export const useReportSummary = () => {
         totalCount: orders?.length || 0,
       };
       
-      // Add company-specific savings calculation (10% of total)
+      // Add company-specific savings calculation (15-30% avg = 22.5%)
       if (isCompany) {
-        summary.estimatedSavings = totalValue * 0.10;
+        // Random factor between 0.15 and 0.30 for more realistic savings
+        const savingsRate = 0.15 + (Math.random() * 0.15);
+        summary.estimatedSavings = totalValue * savingsRate;
         summary.projectedSpending = totalValue;
       }
       

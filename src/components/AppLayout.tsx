@@ -120,7 +120,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
   // Always accessible items
   const bottomItems = [
-    { label: 'Notificações', icon: Bell, path: '/notificacoes', badge: unreadNotifications },
+    { label: 'Notificações', icon: Bell, path: '/notificacoes', badge: unreadNotifications > 0 ? unreadNotifications : undefined },
     { label: 'Perfil', icon: User, path: '/perfil' },
     { label: 'Créditos', icon: CreditCard, path: '/creditos' },
     { label: 'Configurações', icon: Settings, path: '/configuracoes' },

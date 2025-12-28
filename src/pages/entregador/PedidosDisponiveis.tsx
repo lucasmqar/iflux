@@ -1,7 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
-import { useAvailableOrders, useUpdateOrderStatus } from '@/hooks/useOrders';
+import { useAvailableOrders, useUpdateOrderStatus, useDriverOrders } from '@/hooks/useOrders';
 import { useCompanyProfile } from '@/hooks/useCompanyProfiles';
 import { useProfile } from '@/hooks/useProfile';
 import { formatBrasiliaDateShort, PACKAGE_TYPE_LABELS } from '@/types';
@@ -30,7 +30,13 @@ const PedidosDisponiveis = () => {
   const queryClient = useQueryClient();
   
   const { data: availableOrders = [], isLoading } = useAvailableOrders();
+  const { data: driverOrders = [] } = useDriverOrders(user?.id);
   const updateStatusMutation = useUpdateOrderStatus();
+
+  // Check if driver has any order in progress
+  const hasOrderInProgress = driverOrders.some(o => 
+    o.status === 'accepted' || o.status === 'driver_completed'
+  );
 
   // Real-time subscription para novos pedidos
   useEffect(() => {
@@ -45,6 +51,7 @@ const PedidosDisponiveis = () => {
         },
         () => {
           queryClient.invalidateQueries({ queryKey: ['orders', 'available'] });
+          queryClient.invalidateQueries({ queryKey: ['orders', 'driver', user?.id] });
         }
       )
       .subscribe();
@@ -52,11 +59,16 @@ const PedidosDisponiveis = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [queryClient]);
+  }, [queryClient, user?.id]);
 
   if (!user || user.role !== 'driver') return null;
 
   const handleAccept = async (orderId: string) => {
+    if (hasOrderInProgress) {
+      toast.error('Finalize sua entrega atual antes de aceitar outro pedido');
+      return;
+    }
+    
     if (!hasCredits) {
       toast.error('Você precisa de créditos para aceitar pedidos');
       navigate('/creditos');
@@ -103,8 +115,26 @@ const PedidosDisponiveis = () => {
           </div>
         </div>
 
+        {/* Warning if has order in progress */}
+        {hasOrderInProgress && (
+          <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 dark:bg-amber-900/30 dark:border-amber-800">
+            <p className="text-sm text-amber-800 dark:text-amber-300 font-medium flex items-center gap-2">
+              <Package className="h-4 w-4" />
+              Você tem uma entrega em andamento. Finalize-a para aceitar novos pedidos.
+            </p>
+            <Button 
+              size="sm" 
+              variant="outline"
+              className="mt-2" 
+              onClick={() => navigate('/meus-pedidos')}
+            >
+              Ver Meus Pedidos
+            </Button>
+          </div>
+        )}
+
         {/* Dica para entregador */}
-        {hasCredits && availableOrders.length > 0 && (
+        {hasCredits && availableOrders.length > 0 && !hasOrderInProgress && (
           <div className="p-4 rounded-xl bg-gradient-to-r from-amber-50 to-amber-100 border border-amber-200">
             <p className="text-sm text-amber-800 font-medium flex items-center gap-2">
               <DollarSign className="h-4 w-4" />
@@ -139,6 +169,7 @@ const PedidosDisponiveis = () => {
               onAccept={() => handleAccept(order.id)}
               onViewDetails={() => navigate(`/pedido/${order.id}`)}
               hasCredits={hasCredits}
+              hasOrderInProgress={hasOrderInProgress}
               isPending={updateStatusMutation.isPending}
             />
           ))}
@@ -165,6 +196,7 @@ const OrderCard = ({
   onAccept, 
   onViewDetails, 
   hasCredits,
+  hasOrderInProgress,
   isPending 
 }: { 
   order: any;
@@ -172,6 +204,7 @@ const OrderCard = ({
   onAccept: () => void; 
   onViewDetails: () => void;
   hasCredits: boolean;
+  hasOrderInProgress: boolean;
   isPending: boolean;
 }) => {
   const { data: companyProfile } = useCompanyProfile(order.company_user_id);
@@ -255,7 +288,7 @@ const OrderCard = ({
           <Button 
             size="sm" 
             onClick={onAccept} 
-            disabled={!hasCredits || isPending}
+            disabled={!hasCredits || hasOrderInProgress || isPending}
             className="flex-1 bg-primary hover:bg-primary/90"
           >
             {isPending ? (
@@ -263,7 +296,7 @@ const OrderCard = ({
             ) : (
               <CheckCircle2 className="h-4 w-4" />
             )}
-            Aceitar Pedido
+            {hasOrderInProgress ? 'Finalize sua entrega' : 'Aceitar Pedido'}
           </Button>
         </div>
       </div>
