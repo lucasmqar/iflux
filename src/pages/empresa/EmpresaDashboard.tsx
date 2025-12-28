@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useOrders, useUpdateOrderStatus } from '@/hooks/useOrders';
 import { useProfile } from '@/hooks/useProfile';
 import { useDriverProfile } from '@/hooks/useDriverProfiles';
-import { ExpiredCreditBanner, PromoBanner } from '@/components/banners';
+import { ExpiredCreditBanner, InfoBanner } from '@/components/banners';
 import { StatusBadge } from '@/components/StatusBadge';
 import { openWhatsApp, getAddCreditsWhatsAppUrl } from '@/lib/whatsapp';
 import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
@@ -129,8 +129,8 @@ const EmpresaDashboard = () => {
         {/* Expired credit banner */}
         <ExpiredCreditBanner />
 
-        {/* Promo banner */}
-        {hasCredits && <PromoBanner variant="compact" />}
+        {/* Info banner */}
+        {hasCredits && <InfoBanner variant="compact" />}
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -306,32 +306,38 @@ const EmpresaDashboard = () => {
           </section>
         )}
 
-        {/* Promotional Banners */}
+        {/* Support and Tips Section */}
         <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="card-static p-5 bg-gradient-to-br from-neutral-900 to-neutral-800">
-            <h3 className="text-lg font-semibold text-white mb-2">Pacote 3 meses</h3>
-            <p className="text-neutral-300 text-sm mb-4">Economize com o plano trimestral</p>
+          <div className="card-static p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <MessageCircle className="h-5 w-5 text-primary" />
+              </div>
+              <h3 className="font-semibold text-foreground">Suporte FLUX</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Precisa de ajuda? Nossa equipe está disponível para te auxiliar.
+            </p>
             <Button
-              className="bg-[#25D366] hover:bg-[#20BD5A] text-white"
+              variant="outline"
+              className="w-full"
               onClick={() => openWhatsApp(getAddCreditsWhatsAppUrl(user))}
             >
               <MessageCircle className="h-4 w-4" />
-              Contratar via WhatsApp
+              Falar com Suporte
             </Button>
           </div>
-          <div className="card-static p-5 bg-gradient-to-br from-neutral-900 to-neutral-800 border-2 border-amber-500">
-            <div className="flex items-center gap-2 mb-2">
-              <h3 className="text-lg font-semibold text-white">Pacote 6 meses</h3>
-              <span className="text-xs bg-amber-500 text-amber-950 px-2 py-0.5 rounded-full font-medium">Melhor oferta</span>
+          <div className="card-static p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/40">
+                <Package className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <h3 className="font-semibold text-foreground">Dica de Segurança</h3>
             </div>
-            <p className="text-neutral-300 text-sm mb-4">Máxima economia no plano semestral</p>
-            <Button
-              className="bg-[#25D366] hover:bg-[#20BD5A] text-white"
-              onClick={() => openWhatsApp(getAddCreditsWhatsAppUrl(user))}
-            >
-              <MessageCircle className="h-4 w-4" />
-              Contratar via WhatsApp
-            </Button>
+            <p className="text-sm text-muted-foreground">
+              Compartilhe o código de entrega apenas quando o entregador chegar ao destino. 
+              Nunca envie o código antes da confirmação presencial.
+            </p>
           </div>
         </section>
       </div>

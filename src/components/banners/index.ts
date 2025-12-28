@@ -1,4 +1,3 @@
 export { ExpiredCreditBanner } from './ExpiredCreditBanner';
-export { PromoBanner } from './PromoBanner';
-export { MarketingBanner } from './MarketingBanner';
+export { InfoBanner } from './InfoBanner';
 export { DeliveryInProgressBanner } from './DeliveryInProgressBanner';

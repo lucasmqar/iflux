@@ -72,32 +72,38 @@ const Creditos = () => {
           </Button>
         </div>
 
-        {/* Promo packages */}
+        {/* Support and Tips */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="card-static p-5 bg-gradient-to-br from-neutral-900 to-neutral-800">
-            <h3 className="text-lg font-semibold text-white mb-2">Pacote 3 meses</h3>
-            <p className="text-neutral-300 text-sm mb-4">Economize com o plano trimestral</p>
+          <div className="card-static p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <MessageCircle className="h-5 w-5 text-primary" />
+              </div>
+              <h3 className="font-semibold text-foreground">Suporte</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Dúvidas sobre créditos? Fale com nosso suporte.
+            </p>
             <Button
-              className="w-full bg-[#25D366] hover:bg-[#20BD5A] text-white"
+              variant="outline"
+              className="w-full"
               onClick={handleAddCredits}
             >
               <MessageCircle className="h-4 w-4" />
-              Contratar
+              WhatsApp
             </Button>
           </div>
-          <div className="card-static p-5 bg-gradient-to-br from-neutral-900 to-neutral-800 border-2 border-amber-500">
-            <div className="flex items-center gap-2 mb-2">
-              <h3 className="text-lg font-semibold text-white">Pacote 6 meses</h3>
-              <span className="text-xs bg-amber-500 text-amber-950 px-2 py-0.5 rounded-full font-medium">Melhor</span>
+          <div className="card-static p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/40">
+                <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <h3 className="font-semibold text-foreground">Dica</h3>
             </div>
-            <p className="text-neutral-300 text-sm mb-4">Máxima economia</p>
-            <Button
-              className="w-full bg-[#25D366] hover:bg-[#20BD5A] text-white"
-              onClick={handleAddCredits}
-            >
-              <MessageCircle className="h-4 w-4" />
-              Contratar
-            </Button>
+            <p className="text-sm text-muted-foreground">
+              Os créditos são consumidos apenas quando você tem pedidos ativos. 
+              Sem pedidos, seu crédito fica pausado.
+            </p>
           </div>
         </div>
       </div>
